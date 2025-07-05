@@ -143,14 +143,12 @@ spec:
 | EndpointSlice                    | Stores network endpoint addresses of Services (more scalable than Endpoints)     |
 | CustomResourceDefinition         | Lets you define your own API objects to extend Kubernetes                        |
 
-- Volume
-- Service
-- Ingress
-- Egress
-- Deployment (pod's blue print)
-- StatefulSet
-- ConfigMap
-- Secret
+##### [Object Management](https://kubernetes.io/docs/concepts/overview/working-with-objects/object-management/)
+
+- Imperative Commands
+- Declarative
+
+#### [Cluster](https://kubernetes.io/docs/concepts/architecture/)
 
 It is made up of at least one master node and one or more worker nodes. The **_master node makes up the control plane_** of a cluster and is responsible for scheduling tasks and monitoring the state of the cluster.
 ![Cluster](/img/cluster.png)
