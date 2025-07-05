@@ -6,32 +6,18 @@ Kubernetes is a portable, extensible, open source platform for managing containe
 
 #### Salient Feature
 
-- **Service discovery and load balancing**
-  - Expose containers via DNS or IP.
-  - Load balances traffic to keep deployments stable.
-- **Storage orchestration**
-  - Automatically mount local or cloud storage.
-  - Such as local storages, public cloud providers.
-- **Automated Rollouts and Rollbacks**
-  - Manage container updates safely and gradually.
-  - Automate replacing or adopting containers.
-- **Automatic bin packing**
-  - Efficiently place containers based on CPU/RAM needS.
-  - It's can fit containers onto your nodes to make the best use of your resources.
-- **Self-healing**
-  - Restart, replace, or remove unhealthy containers automatically.
-  - Doesn't advertise them to clients until they are ready to serve.
-- **Secret and configuration management**
-  - Securely store and manage secrets (passwords, tokens, etc.)
-  - Update configs without rebuilding images
-- **Batch execution**
-  - Manage batch or CI jobs, restart failed containers
-- **Horizontal scaling**
-  - Scale apps up/down via commands, UI, or automatically.
-- **IPv4/IPv6 dual-stack**
-  - Supports allocating both IPv4 and IPv6 addresses
-- **Designed for extensibility**
-  - Easily add features without changing Kubernetes core
+| **Feature**                        | **Description**                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Service discovery & load balancing | - Expose containers via DNS or IP  <br> - Load balances traffic to keep deployments stable                     |
+| Storage orchestration              | - Automatically mount local or cloud storage  <br> - Works with local disks, public cloud providers            |
+| Automated rollouts & rollbacks     | - Manage container updates safely and gradually  <br> - Automate replacing or adopting containers              |
+| Automatic bin packing              | - Efficiently place containers based on CPU/RAM needs  <br> - Makes best use of node resources                 |
+| Self-healing                       | - Restart, replace, or remove unhealthy containers automatically  <br> - Only advertise ready Pods             |
+| Secret & configuration management  | - Securely store and manage secrets (passwords, tokens, etc.)  <br> - Update configs without rebuilding images |
+| Batch execution                    | - Manage batch or CI jobs  <br> - Restart failed containers                                                    |
+| Horizontal scaling                 | - Scale applications up/down via commands, UI, or automatically                                                |
+| IPv4/IPv6 dual-stack               | - Supports allocation of both IPv4 and IPv6 addresses to Pods and Services                                     |
+| Designed for extensibility         | - Easily add features without changing Kubernetes core                                                         |
 
 #### [Components](https://kubernetes.io/docs/concepts/overview/components/)
 
