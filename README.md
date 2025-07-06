@@ -48,7 +48,7 @@ A Kubernetes cluster consists of a `control plane` and `one/more worker nodes`. 
   - [Container Resource Monitoring](https://kubernetes.io/docs/concepts/architecture/#container-resource-monitoring)
   - [Cluster-level Logging](https://kubernetes.io/docs/concepts/architecture/#cluster-level-logging)
 
-### [Objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
+#### [Objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
 
 Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Learn about the Kubernetes object model and how to work with these objects. Almost every  object includes **two** nested object fields that govern the object's configuration, first `spec` and second `status`.
 
@@ -136,7 +136,7 @@ spec:
 
 ### [Cluster](https://kubernetes.io/docs/concepts/architecture/)
 
-It is made up of at least one master node and one or more worker nodes. The **_master node makes up the control plane_** of a cluster and is responsible for scheduling tasks and monitoring the state of the cluster.
+It is made up of at least one master node and one or more worker nodes. The **master node makes up the control plane** of a cluster and is responsible for scheduling tasks and monitoring the state of the cluster.
 ![Cluster](/img/cluster.png)
 CRI > Container Runtime Interface & CNI > Container Network Interface
 
@@ -380,73 +380,436 @@ spec:
 - StatefulSet
 - DaemonSet
 
+##### Pod update and replacement
+
+When the Pod template for a workload resource is changed, the controller creates new Pods based on the updated template instead of updating or patching the existing Pods. You should not manually update Pods directly. Instead, manage Pods through controllers like `Deployments`, `StatefulSets`, or `DaemonSets`, which will create new Pods with your changes automatically.
+
+**Using Deployment:**
+
+```bash
+kubectl set image deployment my-deployment my-container=myimage:2.0
+```
+
+##### But what if you need
+
+- kubectl patch
+- kubectl edit
+- kubectl replace
+
+```bash
+kubectl patch pod my-pod -p '{"spec":{"containers":[{"name":"my-container","image":"nginx:1.25"}]}}'
+```
+
+##### Pod subresources
+
+The above update rules apply to regular pod updates, but other pod fields can be updated through subresources.
+
+- **Resize**
+  - Allows updating container resource limits and requests (`spec.containers[*].resources`)
+  - See: **Resize Container Resources** for details
+
+- **Ephemeral Containers**
+  - Lets you add ephemeral containers to a running Pod
+  - Useful for debugging
+
+- **Status**
+  - Allows updating the Pod's status
+  - Typically used only by the Kubelet or system controllers
+
+- **Binding**
+  - Allows setting the Pod’s `spec.nodeName` to bind it to a specific node
+  - Usually handled by the Kubernetes scheduler
+
+##### Resource sharing and communication
+
+Pods enable data sharing and communication among their constituent containers.
+
+##### Storage in Pods
+
+- Pods can define shared storage volumes
+- Persistent storage volumes by attaching a PersistentVolume (PV) through a PersistentVolumeClaim (PVC)
+- All containers in the Pod can access these volumes to share data
+- Volumes allow data to persist even if a container inside the Pod restarts
+- See Kubernetes Storage documentation for deeper details
+
+##### Pod Networking
+
+- Each Pod gets a unique IP address for each address family (IPv4/IPv6)
+- All containers in a Pod:
+  - Share the same network namespace
+  - Share the same IP address and port space
+  - Can talk to each other using `localhost`
+- Containers in the same Pod can also use standard inter-process communication (e.g., SystemV semaphores, POSIX shared memory)
+- Containers in different Pods:
+  - Have different IP addresses
+  - Communicate using IP networking (no shared IPC)
+- The system hostname inside each container matches the Pod’s configured name
+
+##### Static Pods
+
+- Managed directly by the **kubelet**, not by the API server
+- Kubelet supervises static Pods and restarts them if they fail
+- Always tied to one specific node and its kubelet
+- Commonly used to run **self-hosted control plane components**
+- Kubelet creates a **mirror Pod** on the API server to make static Pods visible there
+  - However, you cannot manage static Pods through the API server
+- See the **Create static Pods** guide for more details
+
 ##### Pod lifecycle
 
-A Pod lifecycle describes how a Pod goes through different phases from creation to termination.
+A Pod lifecycle describes how a Pod goes through different phases from creation to termination. Lifecycle stages shown below;
 
+| **Phase** | **Description**                                                                                                 |
+| --------- | --------------------------------------------------------------------------------------------------------------- |
+| Pending   | Pod accepted by the cluster, but containers haven’t started yet (e.g., waiting for scheduling or image pulling) |
+| Running   | At least one container has started successfully, and the Pod is active                                          |
+| Succeeded | All containers have completed successfully and won’t restart                                                    |
+| Failed    | At least one container terminated with an error and will not restart                                            |
+| Unknown   | Pod state cannot be determined (e.g., lost communication with the node)                                         |
 
+##### [Init Containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/)
 
+This is specialized containers that run before app containers in a Pod. Init containers can contain utilities or setup scripts not present in an app image. You can specify init containers in the Pod specification alongside the containers array (which describes app containers).
 
+```bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox:1.28
+    command: ['sh', '-c', "until nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice; sleep 2; done"]
+  - name: init-mydb
+    image: busybox:1.28
+    command: ['sh', '-c', "until nslookup mydb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done"]
+```
 
+##### [Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/)
 
+A secondary container that runs in the same Pod as the main application container, providing supporting features (like logging, monitoring, or security) without modifying the primary application’s code. It shares storage, networking, and lifecycle with the main container.
 
+- Example:
+  - App container runs a web application
+  - Sidecar container runs a local web server to serve its content
 
+#### Workload Management
 
+- Kubernetes offers built-in APIs to manage your workloads declaratively. Instead of handling Pods manually, you define higher-level workload objects (like Deployments), and Kubernetes automatically creates and manages the Pods for you, replacing them if they fail.
 
+##### [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 
+A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state.
 
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
 
+##### ReplicaSet
 
+A ReplicaSet's purpose is to maintain a stable set of replica Pods running at any given time. Usually, you define a Deployment and let that Deployment manage ReplicaSets automatically.
 
+```bash
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: frontend
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  # modify replicas according to your case
+  replicas: 3
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: us-docker.pkg.dev/google-samples/containers/gke/gb-frontend:v5
+```
 
+##### StatefulSets
 
+A StatefulSet runs a group of Pods, and maintains a sticky identity for each of those Pods. This is useful for managing applications that need persistent storage or a stable, unique network identity.
 
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  selector:
+    matchLabels:
+      app: nginx # has to match .spec.template.metadata.labels
+  serviceName: "nginx"
+  replicas: 3 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: nginx # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.24
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+```
 
+##### DaemonSet
 
+A DaemonSet defines Pods that provide node-local facilities. These might be fundamental to the operation of your cluster, such as a networking helper tool, or be part of an add-on.
 
+```bash
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+spec:
+  selector:
+    matchLabels:
+      name: fluentd-elasticsearch
+  template:
+    metadata:
+      labels:
+        name: fluentd-elasticsearch
+    spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fluentd-elasticsearch
+        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+      # it may be desirable to set a high priority class to ensure that a DaemonSet Pod
+      # preempts running Pods
+      # priorityClassName: important
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+```
 
+##### Jobs
 
+Jobs represent one-off tasks that run to completion and then stop.
 
+```bash
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi
+spec:
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
+  backoffLimit: 4
+```
 
+##### CronJob
 
+A CronJob starts one-time Jobs on a repeating schedule.
 
+```bash
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+```
 
+**Writing a CronJob spec - Schedule syntax:**
 
-**Version** Its Mandatory in same version
+```bash
+# ┌───────────────────── minute (0 - 59)
+# │ ┌─────────────────── hour (0 - 23)
+# │ │ ┌───────────────── day of the month (1 - 31)
+# │ │ │ ┌─────────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │                                   OR sun, mon, tue, wed, thu, fri, sat
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+```
 
-- kube-apiserver [`x > v1.12`]
-- controller-manager [`x-1 > v1.11 or v1.12`]
-- kube-scheduler [`x-1 > v1.11 or v1.12`]
-- kubelet [`x-2 > v1.10 or v1.11`]
-- kube-proxy [`x-2 > v1.10 or v1.11`]
-- kubectl [`x-1, x+1 > v1.11, v1.13`]
+##### ReplicationController
 
-##### [Services](https://kubernetes.io/docs/concepts/services-networking/service/)
+Legacy API for managing workloads that can scale horizontally. Superseded by the Deployment and ReplicaSet APIs.
 
-It is a logical abstraction for a deployed group of pods in a cluster (which all perform the same function). if one is crash then another will ready to work. The core attributes of a Kubernetes service are:
+```bash
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    app: nginx
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+```
 
-- A label selector that locates pods
-- The clusterIP IP address and assigned port number
-- Port definitions
-- Optional mapping of incoming ports to a targetPort
+#### [Autoscaling Workloads](https://kubernetes.io/docs/concepts/workloads/autoscaling/)
 
-##### Types of Service
+With autoscaling, you can automatically update your workloads in one way or another. This allows your cluster to react to changes in resource demand more elastically and efficiently.
 
-- _**ClusterIP:**_
-Exposes a service which is only accessible from within the cluster. It is the default type of service, which is used to expose a service on an IP address internal to the cluster. Access is only permitted from within the cluster.
+**Scaling workloads manually**
+Kubernetes supports manual scaling of workloads. Horizontal scaling can be done using the kubectl CLI. For vertical scaling, you need to patch the resource definition of your workload. See below for examples of both strategies.
 
-- _**NodePort**_
-Exposes a service via a static port on each node’s IP.
+- Horizontal scaling: Running multiple instances of your app
+- Vertical scaling: Resizing CPU and memory resources assigned to containers
 
-- _**LoadBalancer**_
-Exposes the service via the cloud provider’s load balancer like AWS or Azure.
+#### [Managing Workloads](https://kubernetes.io/docs/concepts/workloads/management/)
 
-- _**ExternalName**_
-Maps a service to a predefined externalName field by returning a value for the CNAME record.
+You've deployed your application and exposed it via a Service. Now what? Kubernetes provides a number of tools to help you manage your application deployment, including scaling and updating.
 
-_**Sample Service**_
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-svc
+  labels:
+    app: nginx
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
 
-``` YAML
+#### [Services, Load Balancing, and Networking](https://kubernetes.io/docs/concepts/services-networking/)
+
+**Services:** Expose an application running in your cluster behind a single outward-facing endpoint, even when the workload is split across multiple backends.
+
+```bash
 apiVersion: v1
 kind: Service
 metadata:
@@ -460,67 +823,217 @@ spec:
       targetPort: 9376
 ```
 
-##### Pods (Containers)
+**Port definitions:**
 
-Pods are the smallest deployable units of computing that you can create and manage in Kubernetes. A Pod (as in a pod of whales or pea pod) is a group of **_one or more containers_**, with shared **_storage_** and **_network resources_**, and a **_specification_** for how to run the containers. A Pod's contents are always co-located and co-scheduled, and run in a shared context.
+Port definitions in Pods have names, and you can reference these names in the targetPort attribute of a Service.
+
+```bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: proxy
+spec:
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+      - containerPort: 80
+        name: http-web-svc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app.kubernetes.io/name: proxy
+  ports:
+  - name: name-of-service-port
+    protocol: TCP
+    port: 80
+    targetPort: http-web-svc
+```
+
+**Multi-port Services:**
+
+Kubernetes lets you configure multiple port definitions on a Service object. When using multiple ports for a Service, you must give all of your ports names so that these are unambiguous. For example:
+
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9376
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 9377
+```
+
+##### Service type
+
+- **ClusterIP**
+  - Exposes the Service on an internal cluster IP
+  - Only reachable within the cluster
+  - Default Service type
+  - To expose it externally, use Ingress or a Gateway
+
+- **NodePort**
+  - Exposes the Service on each Node’s IP at a static port
+  - Also sets up a ClusterIP behind the scenes
+  - Reachable via `<NodeIP>:NodePort`
+
+- **LoadBalancer**
+  - Exposes the Service externally through an external load balancer
+  - Kubernetes does not provide the load balancer directly
+  - Works with cloud provider integrations
+
+- **ExternalName**
+  - Maps the Service to an external DNS name using a CNAME
+  - No proxying, just DNS redirection
+
+##### [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+
+Make your HTTP (or HTTPS) network service available using a protocol-aware configuration mechanism, that understands web concepts like URIs, hostnames, paths, and more. The Ingress concept lets you map traffic to different backends based on rules you define via the Kubernetes API.
+![Ingress](/img/ingress.png)
 
 ``` YAML
-  apiVersion: v1
-  kind: Pod
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
   metadata:
-    name: nginx
+    name: minimal-ingress
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
   spec:
-    containers:
-    - name: nginx
-      image: nginx:1.14.2
-      ports:
-      - containerPort: 80
+    ingressClassName: nginx-example
+    rules:
+    - http:
+        paths:
+        - path: /testpath
+          pathType: Prefix
+          backend:
+            service:
+              name: test
+              port:
+                number: 80
 ```
 
-##### Nodes (VM)
+|  SL   | Command                                        | Explanation                    |
+| :---: | :--------------------------------------------- | :----------------------------- |
+|   1   | `minikube addons enable ingress`               | install controller in Minikube |
+|   2   | `kubectl apply -f dashboard-ingress.yaml`      | ingress create                 |
+|   3   | `minikube get ingress -n kubernetes-dashboard` | see details of ingress         |
 
-A node may be a virtual or physical machine, depending on the cluster. Each node is managed by the control plane and contains the services necessary to run Pods.
+##### Ingress Controllers
 
-```JSON
-{
-  "kind": "Node",
-  "apiVersion": "v1",
-  "metadata": {
-    "name": "10.240.79.157",
-    "labels": {
-      "name": "my-first-k8s-node"
-    }
-  }
-}
+In order for an Ingress to work in your cluster, there must be an ingress controller running. You need to select at least one ingress controller and make sure it is set up in your cluster. This page lists common ingress controllers that you can deploy.
+
+##### [Egress](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+
+Egress refers to the traffic that exits the Kubernetes cluster to external systems or networks.
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external
+spec:
+  podSelector:
+    matchLabels:
+      role: frontend
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    ports:
+    - protocol: TCP
+      port: 80
 ```
 
-A Kubernetes cluster is made up of one **_master_** node and several **_worker_** nodes. The worker nodes are responsible for running the containers and doing any work assigned to them by the master node. The master node looks after or manage the cluster.
+Ingress vs Egress
 
-- Master Node
-  - **_kube-apiserver (cluster gateway) (some request > apiserver > validates request > others process > pod):_** It is entry-point to the Kubernetes cluster, which itself is a container. This is the process that allows communication between different Kubernetes clients and the cluster. We can run several instances of kube-apiserver and balance traffic between those instances. It is designed to scale horizontally—that is, it scales by deploying more instances. it is working as gatekeeper for authentication.
-  - **_etcd (cluster brain):_** is a distributed key-value store that plays a critical role in the architecture of Kubernetes. Consistent and highly-available key value store used as Kubernetes' backing store for all cluster data. If your Kubernetes cluster uses etcd as its backing store, make sure you have a back up plan for the data. application data is not stored in etcd.
-  - **_kube scheduler (schedule new pod > apiserver > scheduler > where put pod > kubelet):_** Scheduler ensures proper pod placement on the worker nodes based on several factors such as the available resources and the current load on the cluster.
-  - **_kube controller manager (kcm > scheduler > kubelet > pod):_** Logically, each controller is a separate process, but to reduce complexity, they are all compiled into a single binary and run in a single process. its can detects cluster state changes. There are many different types of controllers some of them below;
-    - **_Node controller:_** Responsible for noticing and responding when nodes go down.
-    - **_Job controller:_** Watches for Job objects that represent one-off tasks, then creates Pods to run those tasks to completion.
-    - **_EndpointSlice controller:_** Populates EndpointSlice objects (to provide a link between Services and Pods).
-    - **_ServiceAccount controller:_** Create default ServiceAccounts for new namespaces.
-  - **_cloud controller manager:_** lets you link your cluster into your cloud provider's API, and separates out the components that interact with that cloud platform from components that only interact with your cluster.The following controllers can have cloud provider dependencies:
-    - **_Node controller:_** For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
-    - **_Route controller:_** For setting up routes in the underlying cloud infrastructure
-    - **_Service controller:_** For creating, updating and deleting cloud provider load balancers
+|  SL   | Aspect        | Ingress                                                          | Egress                                                                                            |
+| :---: | :------------ | :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+|   1   | Definition    | Manages external access to services within the cluster           | Manages traffic exiting the cluster to external systems                                           |
+|   2   | Focus         | Primary Use Routing incoming HTTP/HTTPS traffic to services      | Controlling and securing outbound traffic from the cluster                                        |
+|   3   | Components    | Ingress Resource & Ingress Controller                            | Network Policies, Egress Gateways (in service mesh environments)                                  |
+|   4   | Functionality | Load balancing, SSL/TLS termination & Name-based virtual hosting | Regulating access to external services, Enforcing security policies & Monitoring outbound traffic |
+|   5   | Example       | NGINX Ingress Controller, HAProxy Ingress & Traefik              | Istio Egress Gateway                                                                              |
 
-- Worker Node: here three process shown below;
+#### [Storage](https://kubernetes.io/docs/concepts/storage/)
 
-  - **_kubelet:_** An agent that runs on each node in the cluster. It makes sure that containers are running in a Pod. The kubelet takes a set of PodSpecs that are provided through various mechanisms and ensures that the containers described in those PodSpecs are running and healthy. Its interacts with container & node.
+[Volumes](https://kubernetes.io/docs/concepts/storage/)
 
-  - **_kube proxy:_** kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept. kube-proxy maintains network rules on nodes. These network rules allow network communication to your Pods from network sessions inside or outside of your cluster.
+It is a directory containing data, which can be accessed by containers in a Kubernetes pod. The location of the directory, the storage media that supports it, and its contents, depend on the specific type of volume being used. There are a few types of volumes in Kubernetes.
 
-  - **_container runtime:_** A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.
+- Volumes
+  - Persistent Volumes (PV)
+    is a piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using `Storage Classes`. It is a resource in the cluster just like a node is a cluster resource. PVs are volume plugins like Volumes, but have a lifecycle independent of any individual Pod that uses the PV.
+  - Persistent Volume Claim (PVC)
+    - It is a request for storage by a user.
+    - It is similar to a Pod.
+    - Pods consume node resources and
+    - PVCs consume PV resources.
+    Pods can request specific levels of resources (CPU and Memory). Claims can request specific `size` and `access` modes (They can be mounted to access mode)
+      - ReadWriteOnce,
+      - ReadOnlyMany,
+      - ReadWriteMany, or
+      - ReadWriteOncePod
+  - Ephemeral Volumes
+  - EmptyDir Volumes
+  - hostPath Volumes
+  - Volumes ConfigMap
+- [Storing Volumes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+  - NFS (Network File System)
+  - CSI (Container Storage Interface)
 
-_**kubectl (kube control):**_ is the command-line tool for interacting with Kubernetes clusters. It allows users to perform various operations on Kubernetes resources, such as creating and managing pods, services, deployments, and more.
+**StorageClass**
+A StorageClass in Kubernetes is a way to define different types of storage, or "classes," that a cluster administrator offers. It provides a way for cluster administrators to describe the "classes" of storage they offer and allows users to request different types of storage dynamically based on their performance and cost requirements.
 
-[_**KinD:**_](https://kind.sigs.k8s.io/) kind is a tool for running local Kubernetes clusters using Docker container “nodes”.
+**Features of StorageClass:**
+
+- **Dynamic Provisioning:** A StorageClass enables dynamic provisioning of Persistent Volumes (PVs). When a user creates a Persistent Volume Claim (PVC) that references a StorageClass, Kubernetes automatically provisions a Persistent Volume that matches the desired storage properties defined in the StorageClass.
+- **Abstracts Underlying Storage:** It abstracts the details of the underlying storage infrastructure (such as type, performance, availability zone, etc.). Users only need to specify the required class of storage (e.g., fast, slow, ssd) without needing to know the specifics of how it is implemented.
+- **Supports Different Backends:** StorageClasses can be configured to support various storage backends such as AWS EBS, Google Cloud Persistent Disks, Azure Disks, NFS, Ceph, GlusterFS, and more. This flexibility allows Kubernetes to work with different types of storage solutions.
+- **Customizable Parameters:** Each StorageClass can define a set of parameters that affect how the storage is provisioned. These parameters are specific to the storage backend and can include details such as disk type, IOPS, redundancy level, and more.
+- **Reclaim Policy:** StorageClasses define a reclaim policy that dictates what happens to a dynamically provisioned Persistent Volume when it is released (e.g., deleted). The reclaim policy can be Retain (keep the storage intact), Delete (delete the storage), or Recycle (wipe and reuse the storage).
+
+### Configuration
+
+### Security
+
+### Policies
+
+### Scheduling, Preemption and Eviction
+
+### Cluster Administration
+
+### Windows in Kubernetes
+
+### Extending Kubernetes
+
+**Kubernetes Component Version Compatibility:**
+
+- kube-apiserver [`x > v1.12`]
+- controller-manager [`x-1 > v1.11 or v1.12`]
+- kube-scheduler [`x-1 > v1.11 or v1.12`]
+- kubelet [`x-2 > v1.10 or v1.11`]
+- kube-proxy [`x-2 > v1.10 or v1.11`]
+- kubectl [`x-1, x+1 > v1.11, v1.13`]
+
+[**KinD:**](https://kind.sigs.k8s.io/) kind is a tool for running local Kubernetes clusters using Docker container “nodes”.
 kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
 To install Kind in Ubuntu
@@ -625,28 +1138,11 @@ Interact with the Cluster
 sudo snap install kubectl --classic
 ```
 
-_**Minikube:**_ is a tool that allows you to run a single-node Kubernetes cluster locally on your machine. It is designed to be a lightweight and easy-to-use solution for developers who want to develop, test, and experiment with Kubernetes applications without the need for a full-scale, multi-node cluster.
-
-##### kubectl cli vs minikube cli?
-
-| Feature                                   | **kubectl CLI**                                                                                 | **minikube CLI**                                                                                                          |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Purpose**                               | The primary command-line tool for interacting with Kubernetes clusters.                         | A tool specifically for managing a local Kubernetes cluster created by Minikube.                                          |
-| **Cluster Scope**                         | Can interact with any Kubernetes cluster, local or remote, as long as kubeconfig is configured. | Primarily used for managing local Kubernetes clusters created by Minikube.                                                |
-| **Command Types**                         | Commands to interact with Kubernetes resources (pods, services, deployments, etc.).             | Commands to manage the Minikube environment (start, stop, status, etc.).                                                  |
-| **Functionality**                         | Used for deployment, troubleshooting, and managing Kubernetes resources.                        | Used for creating, stopping, and configuring Minikube clusters.                                                           |
-| **Cluster Context**                       | Works with any cluster configured in the kubeconfig file.                                       | Works only with the Minikube local cluster, though it can switch between multiple Minikube clusters.                      |
-| **Common Commands**                       | `kubectl get`, `kubectl apply`, `kubectl delete`, `kubectl logs`, `kubectl describe`, etc.      | `minikube start`, `minikube stop`, `minikube status`, `minikube dashboard`, `minikube ssh`, etc.                          |
-| **Configuration**                         | Configuration is typically managed through a `kubeconfig` file.                                 | Configuration is specific to Minikube and stored in Minikube's settings.                                                  |
-| **Cluster Creation**                      | Does not create clusters, only manages existing ones.                                           | Manages the creation of local Kubernetes clusters using VirtualBox, Docker, etc.                                          |
-| **Integration with Kubernetes Resources** | Fully integrated with all Kubernetes resources for cluster management.                          | Provides limited integration as it's focused on managing the local Minikube instance.                                     |
-| **Cluster Management**                    | Requires a cluster to be already set up (can interact with local or cloud-based clusters).      | Fully manages local Kubernetes clusters, including starting, stopping, and inspecting the state of the Minikube cluster.  |
-| **Use Case**                              | For users interacting with any Kubernetes cluster (local, cloud, on-premise).                   | For users working with local Minikube clusters for development or testing.                                                |
-| **Interaction with Docker**               | Interacts with Kubernetes' Docker (or container runtime) for container management.              | Minikube CLI interacts with Docker (if Minikube is set to use Docker) to manage containers in the local Minikube cluster. |
+**Minikube:** is a tool that allows you to run a single-node Kubernetes cluster locally on your machine. It is designed to be a lightweight and easy-to-use solution for developers who want to develop, test, and experiment with Kubernetes applications without the need for a full-scale, multi-node cluster.
 
 ##### Install Minikube & kubectl (You may install as per your operating system.)
 
-- Minikube [install](https://minikube.sigs.k8s.io/docs/start/) or Microk8s [install](https://microk8s.io) _**Minikube Recommended**_.
+- Minikube [install](https://minikube.sigs.k8s.io/docs/start/) or Microk8s [install](https://microk8s.io) **Minikube Recommended**.
 
 ```bash
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
@@ -669,7 +1165,7 @@ Check the running/all container on docker
 
 If it return "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'", then
 
-- You will Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) _**Ubuntu Server Recommended**_.
+- You will Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) **Ubuntu Server Recommended**.
 
 |  SL   | Command                                                            | Explanation                            |
 | :---: | :----------------------------------------------------------------- | :------------------------------------- |
@@ -758,76 +1254,6 @@ metadata:
 |   4   | `kubectl get deployment`                 | checking the deployment             |
 |   5   | `kubectl exec -it podName -- bin/bash`   | accessing the pod                   |
 
-##### See (2-yaml-file-parts) for yaml understanding. Recommended to read docs of [kubernetes](https://kubernetes.io/docs/home/)
-
-##### See (3-complete-deployment) for complete deployment. Recommended to read docs of [kubernetes](https://kubernetes.io/docs/home/)
-
-#### [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/#:~:text=The%20Ingress%20concept%20lets%20you,define%20via%20the%20Kubernetes%20API.&text=An%20API%20object%20that%20manages,and%20name%2Dbased%20virtual%20hosting.)
-
-Ingress exposes HTTP and HTTPS routes from outside the cluster to services within the cluster. Traffic routing is controlled by rules defined on the Ingress resource. Here is a simple example where an Ingress sends all its traffic to one Service:
-![Ingress](/img/ingress.png)
-
-``` YAML
-  apiVersion: networking.k8s.io/v1
-  kind: Ingress
-  metadata:
-    name: minimal-ingress
-    annotations:
-      nginx.ingress.kubernetes.io/rewrite-target: /
-  spec:
-    ingressClassName: nginx-example
-    rules:
-    - http:
-        paths:
-        - path: /testpath
-          pathType: Prefix
-          backend:
-            service:
-              name: test
-              port:
-                number: 80
-```
-
-|  SL   | Command                                        | Explanation                    |
-| :---: | :--------------------------------------------- | :----------------------------- |
-|   1   | `minikube addons enable ingress`               | install controller in Minikube |
-|   2   | `kubectl apply -f dashboard-ingress.yaml`      | ingress create                 |
-|   3   | `minikube get ingress -n kubernetes-dashboard` | see details of ingress         |
-
-#### [Egress](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
-
-Egress refers to the traffic that exits the Kubernetes cluster to external systems or networks.
-
-```bash
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-external
-spec:
-  podSelector:
-    matchLabels:
-      role: frontend
-  policyTypes:
-  - Egress
-  egress:
-  - to:
-    - ipBlock:
-        cidr: 0.0.0.0/0
-    ports:
-    - protocol: TCP
-      port: 80
-```
-
-Ingress vs Egress
-
-|  SL   | Aspect        | Ingress                                                          | Egress                                                                                            |
-| :---: | :------------ | :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-|   1   | Definition    | Manages external access to services within the cluster           | Manages traffic exiting the cluster to external systems                                           |
-|   2   | Focus         | Primary Use Routing incoming HTTP/HTTPS traffic to services      | Controlling and securing outbound traffic from the cluster                                        |
-|   3   | Components    | Ingress Resource & Ingress Controller                            | Network Policies, Egress Gateways (in service mesh environments)                                  |
-|   4   | Functionality | Load balancing, SSL/TLS termination & Name-based virtual hosting | Regulating access to external services, Enforcing security policies & Monitoring outbound traffic |
-|   5   | Example       | NGINX Ingress Controller, HAProxy Ingress & Traefik              | Istio Egress Gateway                                                                              |
-
 ##### Namespaces
 
 Namespaces is virtual cluster in a cluster, where organized the resources. Namespaces provides a mechanism for isolating groups of resources within a single cluster. Names of resources need to be unique within a namespace, but not across namespaces. Kubernetes starts with four initial namespaces:
@@ -870,123 +1296,7 @@ Namespaces is virtual cluster in a cluster, where organized the resources. Names
 |   2   | `kubectl cluster-info`                 | Check the cluster info    |
 |   3   | `kubectl create namespace myNamespace` | Create namespace          |
 
-##### [Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
-
-Pods are the smallest deployable units of computing that you can create and manage in Kubernetes. [Horizontal Pod Autoscaling](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
-
-##### [Containers](https://kubernetes.io/docs/concepts/containers/)
-
-Each container that you run is repeatable; the standardization from having dependencies included means that you get the same behavior wherever you run it.
-
-##### [Volumes](https://kubernetes.io/docs/concepts/storage/)
-
-It is a directory containing data, which can be accessed by containers in a Kubernetes pod. The location of the directory, the storage media that supports it, and its contents, depend on the specific type of volume being used. There are a few types of volumes in Kubernetes.
-
-- Volumes
-  - Persistent Volumes (PV)
-    is a piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using `Storage Classes`. It is a resource in the cluster just like a node is a cluster resource. PVs are volume plugins like Volumes, but have a lifecycle independent of any individual Pod that uses the PV.
-  - Persistent Volume Claim (PVC)
-    - It is a request for storage by a user.
-    - It is similar to a Pod.
-    - Pods consume node resources and
-    - PVCs consume PV resources.
-    Pods can request specific levels of resources (CPU and Memory). Claims can request specific `size` and `access` modes (They can be mounted to access mode)
-      - ReadWriteOnce,
-      - ReadOnlyMany,
-      - ReadWriteMany, or
-      - ReadWriteOncePod
-  - Ephemeral Volumes
-  - EmptyDir Volumes
-  - hostPath Volumes
-  - Volumes ConfigMap
-- [Storing Volumes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
-  - NFS (Network File System)
-  - CSI (Container Storage Interface)
-
-**StorageClass**
-A StorageClass in Kubernetes is a way to define different types of storage, or "classes," that a cluster administrator offers. It provides a way for cluster administrators to describe the "classes" of storage they offer and allows users to request different types of storage dynamically based on their performance and cost requirements.
-
-**Features of StorageClass**
-
-- **Dynamic Provisioning:** A StorageClass enables dynamic provisioning of Persistent Volumes (PVs). When a user creates a Persistent Volume Claim (PVC) that references a StorageClass, Kubernetes automatically provisions a Persistent Volume that matches the desired storage properties defined in the StorageClass.
-- **Abstracts Underlying Storage:** It abstracts the details of the underlying storage infrastructure (such as type, performance, availability zone, etc.). Users only need to specify the required class of storage (e.g., fast, slow, ssd) without needing to know the specifics of how it is implemented.
-- **Supports Different Backends:** StorageClasses can be configured to support various storage backends such as AWS EBS, Google Cloud Persistent Disks, Azure Disks, NFS, Ceph, GlusterFS, and more. This flexibility allows Kubernetes to work with different types of storage solutions.
-- **Customizable Parameters:** Each StorageClass can define a set of parameters that affect how the storage is provisioned. These parameters are specific to the storage backend and can include details such as disk type, IOPS, redundancy level, and more.
-- **Reclaim Policy:** StorageClasses define a reclaim policy that dictates what happens to a dynamically provisioned Persistent Volume when it is released (e.g., deleted). The reclaim policy can be Retain (keep the storage intact), Delete (delete the storage), or Recycle (wipe and reuse the storage).
-
-##### [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)
-
-A ConfigMap is an API object used to store non-confidential data in key-value pairs. Pods can consume ConfigMaps as environment variables, command-line arguments, or as configuration files in a volume.
-
-#### [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
-
-It is a workload API object used to manage stateful applications. Unlike a `Deployment`, which is used for stateless applications, a StatefulSet provides unique network identities and stable, persistent storage for each of its pods. A StatefulSet runs a group of Pods, and maintains a sticky identity for each of those Pods. This is useful for managing applications that need persistent storage or a stable, unique network identity.
-
-**Using StatefulSets**
-StatefulSets are valuable for applications that require one or more of the following.
-
-- Stable, unique network identifiers.
-- Stable, persistent storage.
-- Ordered, graceful deployment and scaling.
-- Ordered, automated rolling updates.
-
-StatefulSet Example
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-  labels:
-    app: nginx
-spec:
-  ports:
-  - port: 80
-    name: web
-  clusterIP: None
-  selector:
-    app: nginx
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: web
-spec:
-  selector:
-    matchLabels:
-      app: nginx # has to match .spec.template.metadata.labels
-  serviceName: "nginx"
-  replicas: 3 # by default is 1
-  minReadySeconds: 10 # by default is 0
-  template:
-    metadata:
-      labels:
-        app: nginx # has to match .spec.selector.matchLabels
-    spec:
-      terminationGracePeriodSeconds: 10
-      containers:
-      - name: nginx
-        image: registry.k8s.io/nginx-slim:0.24
-        ports:
-        - containerPort: 80
-          name: web
-        volumeMounts:
-        - name: www
-          mountPath: /usr/share/nginx/html
-  volumeClaimTemplates:
-  - metadata:
-      name: www
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "my-storage-class"
-      resources:
-        requests:
-          storage: 1Gi
-````
-
-##### [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
-
-A Secret is an object that contains a small amount of sensitive data such as a password, a token, or a key. Such information might otherwise be put in a Pod specification or in a container image. Using a Secret means that you don't need to include confidential data in your application code.
+**AWS CLI, KubeCtl & EksCtl Configuration:**
 
 1. AWS CLI
    - Control multiple AWS services from this command line.
@@ -995,7 +1305,7 @@ A Secret is an object that contains a small amount of sensitive data such as a p
    - If its okay then we will see `aws-cli/2.15.4 Python/3.11.6 Darwin/23.2.0 exe/x86_64 prompt/off`
    - Configuration using security credential
      - Go to AWS Management Console > Services > IAM
-     - Select the IAM User Name: Your User Name [_**NB**_: You must use IAM's Information only not Root User]
+     - Select the IAM User Name: Your User Name [**NB**: You must use IAM's Information only not Root User]
      - Click on `Security credentials`
      - Click on `Create access key`
      - Copy Access ID & Secret access key
