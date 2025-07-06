@@ -310,18 +310,18 @@ How kubelet managed Containers can use the Container lifecycle hook framework to
 
 #### Built-in workload resources
 
-- **Deployment/ReplicaSet**
+- [**Deployment/ReplicaSet**](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
   - Good for stateless apps
   - Any Pod can be replaced interchangeably
-- **StatefulSet**
+- [**StatefulSet**](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
   - For stateful apps needing stable identities
   - Can use PersistentVolumes and replicate data
-- **DaemonSet**
+- [**DaemonSet**](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
   - Runs a Pod on every matching node
   - Useful for node-level tasks like networking plugins or monitoring
-- **Job**
+- [**Job**](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
   - Runs a task once, until completion
-- **CronJob**
+- [**CronJob**](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/)
   - Runs Jobs on a schedule
 - **Custom Resources**
   - You can define third-party workload resources with custom behavior
@@ -532,7 +532,7 @@ spec:
         - containerPort: 80
 ```
 
-##### ReplicaSet
+##### [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
 
 A ReplicaSet's purpose is to maintain a stable set of replica Pods running at any given time. Usually, you define a Deployment and let that Deployment manage ReplicaSets automatically.
 
@@ -560,7 +560,7 @@ spec:
         image: us-docker.pkg.dev/google-samples/containers/gke/gb-frontend:v5
 ```
 
-##### StatefulSets
+##### [StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 
 A StatefulSet runs a group of Pods, and maintains a sticky identity for each of those Pods. This is useful for managing applications that need persistent storage or a stable, unique network identity.
 
@@ -616,7 +616,7 @@ spec:
           storage: 1Gi
 ```
 
-##### DaemonSet
+##### [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
 
 A DaemonSet defines Pods that provide node-local facilities. These might be fundamental to the operation of your cluster, such as a networking helper tool, or be part of an add-on.
 
@@ -668,7 +668,7 @@ spec:
           path: /var/log
 ```
 
-##### Jobs
+##### [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
 
 Jobs represent one-off tasks that run to completion and then stop.
 
@@ -688,7 +688,7 @@ spec:
   backoffLimit: 4
 ```
 
-##### CronJob
+##### [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/)
 
 A CronJob starts one-time Jobs on a repeating schedule.
 
@@ -728,7 +728,7 @@ spec:
 # * * * * *
 ```
 
-##### ReplicationController
+##### [ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/)
 
 Legacy API for managing workloads that can scale horizontally. Superseded by the Deployment and ReplicaSet APIs.
 
@@ -882,23 +882,23 @@ spec:
 
 ##### Service type
 
-- **ClusterIP**
+- [**ClusterIP**](https://kubernetes.io/docs/concepts/services-networking/service/#type-clusterip)
   - Exposes the Service on an internal cluster IP
   - Only reachable within the cluster
   - Default Service type
   - To expose it externally, use Ingress or a Gateway
 
-- **NodePort**
+- [**NodePort**](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport)
   - Exposes the Service on each Node’s IP at a static port
   - Also sets up a ClusterIP behind the scenes
   - Reachable via `<NodeIP>:NodePort`
 
-- **LoadBalancer**
+- [**LoadBalancer**](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer)
   - Exposes the Service externally through an external load balancer
   - Kubernetes does not provide the load balancer directly
   - Works with cloud provider integrations
 
-- **ExternalName**
+- [**ExternalName**](https://kubernetes.io/docs/concepts/services-networking/service/#externalname)
   - Maps the Service to an external DNS name using a CNAME
   - No proxying, just DNS redirection
 
@@ -1010,7 +1010,7 @@ A StorageClass in Kubernetes is a way to define different types of storage, or "
 - **Customizable Parameters:** Each StorageClass can define a set of parameters that affect how the storage is provisioned. These parameters are specific to the storage backend and can include details such as disk type, IOPS, redundancy level, and more.
 - **Reclaim Policy:** StorageClasses define a reclaim policy that dictates what happens to a dynamically provisioned Persistent Volume when it is released (e.g., deleted). The reclaim policy can be Retain (keep the storage intact), Delete (delete the storage), or Recycle (wipe and reuse the storage).
 
-### Configuration
+### [Configuration](https://kubernetes.io/docs/concepts/configuration/)
 
 #### [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)
 
@@ -1333,56 +1333,6 @@ Namespaces is virtual cluster in a cluster, where organized the resources. Names
 |   1   | `kubectl get namespaces`               | Check enlisted namespaces |
 |   2   | `kubectl cluster-info`                 | Check the cluster info    |
 |   3   | `kubectl create namespace myNamespace` | Create namespace          |
-
-**AWS CLI, KubeCtl & EksCtl Configuration:**
-
-1. AWS CLI
-   - Control multiple AWS services from this command line.
-   - How to [Install?](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-   - Let's me check `aws --version`
-   - If its okay then we will see `aws-cli/2.15.4 Python/3.11.6 Darwin/23.2.0 exe/x86_64 prompt/off`
-   - Configuration using security credential
-     - Go to AWS Management Console > Services > IAM
-     - Select the IAM User Name: Your User Name [**NB**: You must use IAM's Information only not Root User]
-     - Click on `Security credentials`
-     - Click on `Create access key`
-     - Copy Access ID & Secret access key
-     - Go to your Terminal and implement as below format
-     - `aws configure`
-     - AWS Access Key ID [None]: Put your ID here and press Enter.
-     - AWS Secret Access Key [None]: Put your secret key here and press Enter
-     - Default region name [None]: us-east-1
-     - Default output format [None]: json
-     - Check the users `aws iam list-users`
-   - Let's me check whether the configuration is done.
-     - `aws ec2 describe-vpcs`
-     - If it is done then we will see the details of the default vpc.
-
-2. kubectl
-   - Control the kubernetes clusters & objects.
-   - How to [Install?](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
-   - `mkdir kubectlbinary`
-   - `cd kubectlbinary`
-   - `curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.28.3/2023-11-14/bin/darwin/amd64/kubectl`
-   - Assign the execute permissions `chmod +x ./kubectl`
-   - Set the path by copying to user home directory `mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH` & `echo 'export PATH=$HOME/bin:$PATH' >> ~/.bash_profile`
-
-   - Let's me check whether the configuration is done. `kubectl version --client`
-   - If it shows the following output then installation is done.
-     - `Client Version: v1.28.2`
-     - `Kustomize Version: v5.0.4-0.20230601165947-6ce0bf390ce3`
-
-3. eksctl
-   - creating-deleting clusters on AWS EKS.
-   - create, autoscale & delete the node groups.
-   - create fargate profiles.
-   - it is powerfull tool for managing EKS clusters on AWS.
-   - How to [Install?](https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/setting-up-eksctl.html)
-   - If you do not already have Homebrew installed on macOS, install it with the following command. `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
-   - Install the Weaveworks Homebrew tap. `brew tap weaveworks/tap` or `brew install weaveworks/tap/eksctl`
-   - Test that your installation was successful with the following command. You must have eksctl 0.34.0 version or later. `eksctl version`
-   - If it shows the following output then installation is done.
-   - `0.167.0`
 
 ## With Regards, `Jakir`
 
