@@ -1012,17 +1012,55 @@ A StorageClass in Kubernetes is a way to define different types of storage, or "
 
 ### Configuration
 
-### Security
+#### [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)
 
-### Policies
+A ConfigMap is an API object used to store non-confidential data in key-value pairs. Pods can consume ConfigMaps as environment variables, command-line arguments, or as configuration files in a volume.
 
-### Scheduling, Preemption and Eviction
+- An API object that stores **non-confidential** key-value pairs
+- Pods can use ConfigMaps as:
+  - Environment variables
+  - Command-line arguments
+  - Configuration files mounted from volumes
+- Helps **separate environment-specific configuration** from container images
+- Makes applications easier to **deploy and port** across environments
 
-### Cluster Administration
+#### [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
 
-### Windows in Kubernetes
+A Secret is an object that contains a small amount of sensitive data such as a password, a token, or a key. Such information might otherwise be put in a Pod specification or in a container image.
 
-### Extending Kubernetes
+- Kubernetes object for storing **sensitive data** (e.g., passwords, tokens, keys)
+- Avoids putting confidential data directly in Pod specs or container images
+- Created **separately** from Pods, reducing the risk of accidental exposure
+- Kubernetes can handle Secrets more securely (e.g., avoid writing to disk)
+- Similar to ConfigMaps, but intended for **confidential data**
+
+#### Liveness, Readiness, and Startup Probes
+
+In Kubernetes are checks performed by the kubelet to monitor the health and status of a container running inside a Pod.
+
+**In simple words:**
+
+- Probes periodically test if your container is healthy and ready.
+- Based on probe results, Kubernetes can:
+  - Restart a failing container (using liveness probes)
+  - Stop sending traffic to a container until it is ready (using readiness probes)
+  - Avoid killing slow-starting containers too early (using startup probes)
+
+| **Probe Type**      | **Purpose**                                                              | **Behavior**                                                                                     |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| **Liveness probe**  | Detects when to restart a container (e.g., deadlocks, unresponsive apps) | - If probe fails repeatedly, kubelet restarts the container  <br> - Runs regardless of readiness |
+| **Readiness probe** | Checks if container is ready to accept traffic                           | - If probe fails, pod is removed from service endpoints  <br> - Runs throughout container life   |
+| **Startup probe**   | Checks if the application has successfully started                       | - Disables liveness & readiness checks until it succeeds  <br> - Runs only at startup            |
+
+### [Security](https://kubernetes.io/docs/concepts/security/)
+
+### [Policies](https://kubernetes.io/docs/concepts/policy/)
+
+### [Scheduling, Preemption and Eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/)
+
+### [Cluster Administration](https://kubernetes.io/docs/concepts/cluster-administration/)
+
+### [Extending Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/)
 
 **Kubernetes Component Version Compatibility:**
 
