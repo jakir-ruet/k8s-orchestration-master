@@ -2,26 +2,47 @@
 
 #### Networking Model
 
-Kubernetes is designed to facilitate the desired state management to host containerized workloads –these workloads take advantage of sharable compute resources. Kubernetes networking resolves the challenge of how to allow different Kubernetes components to communicate with each other and applications on Kubernetes to communicate with other applications, as well as the services outside of the Kubernetes cluster. Now, we are going to break them down one by one in this section.
+Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `external clients` to communicate inside a Kubernetes cluster.
 
-- Container to Container
-- Pod to Pod
-- Pod to Service
-- External to Service
-- Node to Node
+- Core Goals of Cluster Networking
+  - Every Pod has a unique IP address
+  - Pods can communicate with each other across Nodes
+  - Services provide stable IPs to reach dynamic Pods
+  - No NAT is required for Pod-to-Pod communication
 
-**Container to Container**
-Container-to-container communication mainly refers to the communication between containers inside a pod – a multi-container pod is a good example of this. A multi-container pod is a pod that contains multiple containers and is seen as a single unit. Within a pod, every container shares the networking, which includes the IP address and network ports so that those containers can communicate with one another through localhost or standard **Inter Process Communications** (**IPC**) such as **SystemV semaphores** or **POSIX** shared memory. All listening ports are accessible to other containers in the pod even if they’re not exposed outside the pod. The following figure shows how those containers share a local network with each other inside the same pod:
-![Multi-Container](/img/storage/multi-container.png)
+##### Networking Models
 
-**Pod to Pod**
-In K8s, each pod has been given a **unique IP address** based on the **podCIDR** range of that worker node. Although this IP assignment is **not permanent**, as the pod eventually fails or restarts, the new pod will be assigned a **new IP address**. By default, pods can communicate with all pods on all nodes through pod networking without setting up **Network Address Translation** (**NAT**). This is also where we set up host networking. All pods can communicate with each other without NAT.
+1. Pod-to-Pod Communication
+   - Pods can communicate across nodes using their IPs.
+   - CNI plugin sets up this connectivity.
+   - No NAT involved.
+2. Service-to-Pod Communication
+   - A Service gets a ClusterIP (e.g., 10.96.0.1).
+   - Traffic to this IP is routed to backend Pods.
+   - kube-proxy handles the routing (via iptables/IPVS).
+3. Node-to-Pod Communication
+   - Nodes (e.g., kubelet, monitoring agents) talk to Pods using Pod IPs.
+   - This works because of the flat network model (Pods visible from all nodes).
+4. External-to-Cluster Communication - Exposed via:
+   - NodePort (nodeIP:port)
+   - LoadBalancer (via cloud)
+   - Ingress (layer 7 routing)
 
-**Pod to Service**
-Effective communication between pods and services entails letting the service expose an application running on a set of pods. The service accepts traffic from both inside and outside of the cluster. The set of pods can load - balance across them – each pod is assigned its own IP address and a single DNS.
+##### What Enables Kubernetes Cluster Networking — Combined View
 
-**External to Service**
-For effective communication between user to K8s this section is very vital. The challenge with external-to-service communication challenge is also resolved by the service. Service types such as a NodePort or a LoadBalancer can receive traffic from outside the Kubernetes cluster. Type of services
+| Communication Type   | Enabled By                           | Description                                                       |
+| -------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| Pod → Pod            | ✅ CNI Plugin (e.g., Calico, Flannel) | Ensures all Pods can reach each other across nodes with real IPs  |
+| Pod → Service        | ✅ kube-proxy + iptables/IPVS         | Forwards traffic from ClusterIP to backend Pods                   |
+| Pod → External World | ✅ NAT via node or egress gateway     | Lets Pods reach the internet                                      |
+| Node → Pod           | ✅ CNI routing                        | Nodes can talk to any Pod via Pod IP                              |
+| External → Cluster   | ✅ NodePort / LoadBalancer / Ingress  | Enables access to services from outside the cluster               |
+| Service Discovery    | ✅ CoreDNS                            | Resolves service names to ClusterIP addresses                     |
+| Traffic Routing      | ✅ kube-proxy + iptables              | Handles traffic rules for services and endpoints                  |
+| Traffic Restriction  | ✅ NetworkPolicy + CNI                | Controls which Pods can talk to each other (requires CNI support) |
+
+
+##### Type of services
 
 - ClusterIP
   A default service type for Kubernetes. For internal communications, exposing the service makes it reachable within the cluster.
