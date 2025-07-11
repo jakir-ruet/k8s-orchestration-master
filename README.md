@@ -500,6 +500,42 @@ A secondary container that runs in the same Pod as the main application containe
   - App container runs a web application
   - Sidecar container runs a local web server to serve its content
 
+#### [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
+
+Namespaces is virtual cluster in a cluster, where organized the resources. Namespaces provides a mechanism for isolating groups of resources within a single cluster. Names of resources need to be unique within a namespace, but not across namespaces. Kubernetes starts with four initial namespaces:
+
+1. default
+    - We can start using your new cluster without first creating a namespace.
+    - Resource we can create are located here.
+
+2. kube-node-lease
+    - Heartbeats of nodes so that the control plane can detect node failure.
+    - Each node has associated lease object in namespace.
+    - Determines the availability of a node.
+
+3. kube-public:
+    - Publicly accessible data, even without any authentication.
+    - A configure, which containers cluster information.
+
+4. kube-system (```kubectl cluster-info```):
+    - The namespace for objects created by the Kubernetes system.
+    - Do not create or modify in kube system.
+    - System Process.
+    - Master and Kubectl processes
+
+**Importance:**
+
+- Everything in one namespace (default).
+  - Deployments
+  - ReplicaSets
+  - Services
+  - ConfigMaps
+- Resources grouping (database, monitoring, elastic stack, nginx-ingress) is possible in namespace.
+- Conflicts minimization in same application with many teams.
+- Resources sharing is possible such as staging, development, env setup.
+- Limit the access into resource will possible on namespace.
+- Own ConfigMap only possible in each namespace.
+
 #### Workload Management
 
 - Kubernetes offers built-in APIs to manage your workloads declaratively. Instead of handling Pods manually, you define higher-level workload objects (like Deployments), and Kubernetes automatically creates and manages the Pods for you, replacing them if they fail.
@@ -928,6 +964,8 @@ Make your HTTP (or HTTPS) network service available using a protocol-aware confi
                 number: 80
 ```
 
+- If you are using `Minikube`
+
 |  SL   | Command                                        | Explanation                    |
 | :---: | :--------------------------------------------- | :----------------------------- |
 |   1   | `minikube addons enable ingress`               | install controller in Minikube |
@@ -1071,19 +1109,51 @@ In Kubernetes are checks performed by the kubelet to monitor the health and stat
 - kube-proxy [`x-2 > v1.10 or v1.11`]
 - kubectl [`x-1, x+1 > v1.11, v1.13`]
 
-[**KinD:**](https://kind.sigs.k8s.io/) kind is a tool for running local Kubernetes clusters using Docker container “nodes”.
-kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
+### Environment Setup (Two ways one is Minikube, another KIND) - `Minikube Recommended`
+
+#### [Minikube Install & Configuration](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fmacos%2Fx86-64%2Fstable%2Fbinary+download)
+
+Minikube is a lightweight tool that lets you run a `real Kubernetes cluster` locally on your laptop or desktop for development, `testing`, and `learning` purposes.
+
+**Key Points:**
+
+- Runs locally on `macOS`, `Linux`, and `Windows`
+- Supports `Docker`, `Hyperkit`, `KVM`, and `VirtualBox` drivers
+- It creates a `single-node` or `multi-node Kubernetes` cluster using virtual machines or Docker containers
+- Includes all `core Kubernetes` components
+- Ideal for `developers`, `DevOps` engineers, and learners
+- Supports add-ons like `Ingress`, `Dashboard`, and `Metrics Server`
+
+##### Install & Configuration
+
+```bash
+minikube start # for single node
+minikube start --nodes 3 --driver=docker # or
+minikube start --nodes 3 --driver=docker --cpus=2 --memory=3g
+kubectl get nodes -o wide
+```
+
+- If something went wrong
+
+```bash
+minikube start --force --driver=docker
+```
+
+- Run dashboard
+
+```bash
+minikube dashboard
+```
+
+#### [KIND](https://kind.sigs.k8s.io/)
+
+It's a tool for running local Kubernetes clusters using Docker container “nodes”. kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
 To install Kind in Ubuntu
 
 ```bash
 sudo apt update
 sudo apt install -y docker.io
-```
-
-Start and enable Docker:
-
-```bash
 sudo systemctl start docker
 sudo systemctl enable docker
 ```
@@ -1094,19 +1164,15 @@ You can download and install Kind using the following command for ARM & AMD. In 
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-arm64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
+kind version
 ```
 
-Or
+Or, For latest version
 
 ```bash
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
-```
-
-Verify the Installation
-
-```bash
 kind version
 ```
 
@@ -1170,40 +1236,19 @@ ls
 cat /usr/local/etc/haproxy/haproxy.cfg
 ```
 
-Interact with the Cluster
+#### Comparison between Minikube & KIND
 
-```bash
-sudo snap install kubectl --classic
-```
+| Purpose / Use Case                    | Recommendation | Why                                                        |
+| ------------------------------------- | -------------- | ---------------------------------------------------------- |
+| Learning full Kubernetes features     | ✅ Minikube     | Full support for LoadBalancer, Ingress, Dashboard, Storage |
+| CI/CD pipelines / Testing YAML files  | ✅ Kind         | Faster, headless, Docker-native                            |
+| Fast and lightweight cluster          | ✅ Kind         | Uses Docker, no VM overhead                                |
+| Realistic production-like environment | ✅ Minikube     | VM or container-based cluster with full kube features      |
+| Running long-lived workloads locally  | ✅ Minikube     | Better volume persistence and add-on support               |
 
-**Minikube:** is a tool that allows you to run a single-node Kubernetes cluster locally on your machine. It is designed to be a lightweight and easy-to-use solution for developers who want to develop, test, and experiment with Kubernetes applications without the need for a full-scale, multi-node cluster.
+#### [Kubernetes Install & Configuration](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 
-##### Install Minikube & kubectl (You may install as per your operating system.)
-
-- Minikube [install](https://minikube.sigs.k8s.io/docs/start/) or Microk8s [install](https://microk8s.io) **Minikube Recommended**.
-
-```bash
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
-sudo dpkg -i minikube_latest_arm64.deb
-```
-
-```bash
-  minikube start --force --driver=docker
-```
-
-Check the running/all container on docker
-
-```bash
-  docker ps / docker ps -a
-```
-
-```bash
-  minikube dashboard
-```
-
-If it return "kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'", then
-
-- You will Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) **Ubuntu Server Recommended**.
+**Basic Commands:**
 
 |  SL   | Command                                                            | Explanation                            |
 | :---: | :----------------------------------------------------------------- | :------------------------------------- |
@@ -1234,7 +1279,7 @@ If it return "kubectl not found. If you need it, try: 'minikube kubectl -- get p
 |  25   | `kubectl describe pod DepltName PIPESIGN grep -i image`            | which images is use in a pod           |
 |  26   | `kubectl run DepltName --image=nginx --dry-run=client -o yaml`     | see the yaml template                  |
 
-DaemonSet
+**DaemonSet:**
 
 |  SL   | Command                                                      | Explanation            |
 | :---: | :----------------------------------------------------------- | :--------------------- |
@@ -1246,7 +1291,7 @@ DaemonSet
 |   6   | `kubectl apply -f web-app.yaml`                              | apply new label        |
 |   7   | `kubectl get pod --show-labels`                              | check node's label     |
 
-Replica set
+**Replica set:**
 
 |  SL   | Command                                                                                | Explanation                 |
 | :---: | :------------------------------------------------------------------------------------- | :-------------------------- |
@@ -1258,7 +1303,7 @@ Replica set
 |   6   | `kubectl describe deployments.apps AppName`                                            | details of available app    |
 |   7   | `kubectl rollout undo deployment depltName`                                            | go back to pre version      |
 
-Static Pod(Without APIServer)
+**Static Pod(Without APIServer):**
 
 |  SL   | Command                            | Explanation                |
 | :---: | :--------------------------------- | :------------------------- |
@@ -1292,41 +1337,7 @@ metadata:
 |   4   | `kubectl get deployment`                 | checking the deployment             |
 |   5   | `kubectl exec -it podName -- bin/bash`   | accessing the pod                   |
 
-##### Namespaces
-
-Namespaces is virtual cluster in a cluster, where organized the resources. Namespaces provides a mechanism for isolating groups of resources within a single cluster. Names of resources need to be unique within a namespace, but not across namespaces. Kubernetes starts with four initial namespaces:
-
-1. default
-    - We can start using your new cluster without first creating a namespace.
-    - Resource we can create are located here.
-
-2. kube-node-lease
-    - Heartbeats of nodes so that the control plane can detect node failure.
-    - Each node has associated lease object in namespace.
-    - Determines the availability of a node.
-
-3. kube-public:
-    - Publicly accessible data, even without any authentication.
-    - A configure, which containers cluster information.
-
-4. kube-system (```kubectl cluster-info```):
-    - The namespace for objects created by the Kubernetes system.
-    - Do not create or modify in kube system.
-    - System Process.
-    - Master and Kubectl processes
-
-##### Importance
-
-- Everything in one namespace (default).
-  - Deployments
-  - ReplicaSets
-  - Services
-  - ConfigMaps
-- Resources grouping (database, monitoring, elastic stack, nginx-ingress) is possible in namespace.
-- Conflicts minimization in same application with many teams.
-- Resources sharing is possible such as staging, development, env setup.
-- Limit the access into resource will possible on namespace.
-- Own ConfigMap only possible in each namespace.
+**Namespace:**
 
 |  SL   | Command                                | Explanation               |
 | :---: | :------------------------------------- | :------------------------ |

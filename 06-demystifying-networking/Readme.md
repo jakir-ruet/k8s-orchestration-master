@@ -1,6 +1,9 @@
 ### Welcome to Demystifying Networking
+
 #### Networking Model
+
 Kubernetes is designed to facilitate the desired state management to host containerized workloads –these workloads take advantage of sharable compute resources. Kubernetes networking resolves the challenge of how to allow different Kubernetes components to communicate with each other and applications on Kubernetes to communicate with other applications, as well as the services outside of the Kubernetes cluster. Now, we are going to break them down one by one in this section.
+
 - Container to Container
 - Pod to Pod
 - Pod to Service
@@ -19,6 +22,7 @@ Effective communication between pods and services entails letting the service ex
 
 **External to Service**
 For effective communication between user to K8s this section is very vital. The challenge with external-to-service communication challenge is also resolved by the service. Service types such as a NodePort or a LoadBalancer can receive traffic from outside the Kubernetes cluster. Type of services
+
 - ClusterIP
   A default service type for Kubernetes. For internal communications, exposing the service makes it reachable within the cluster.
 
@@ -46,6 +50,7 @@ Ingress acts as a router to route traffic to services via an Ingress-managed loa
 
 **Configuring and leveraging CoreDNS**
 As mentioned earlier in this chapter, nodes, pods, and services are assigned their own IP addresses in the Kubernetes cluster. Kubernetes runs a Domain Name System (DNS) server implementation that maps the name of the service to its IP address via DNS records. So, you can reach out to the services with a consistent DNS name instead of using its IP address. This comes in very handy in the context of microservices. All microservices running in the current Kubernetes cluster can reference the service name to communicate with each other. The DNS server mainly supports the following three types of DNS records, which are also the most common ones:
+
 - A or AAAA records for forward lookups that map a DNS name to an IP address. A record maps a DNS name to an IPv4 address, whereas an AAAA record allows mapping a DNS name to an IPv6 address.
 - SRV records for port lookups so that connections are established between a service and a hostname.
 - PTR records for reversing IP address lookups, which is the opposite function of A and AAAA records. It matches IP addresses to a DNS name. For example, a PTR record for an IP address of `172.0. 0.10` would be stored under the `10.0. 0.172.in-addr.arpa` DNS zone.
