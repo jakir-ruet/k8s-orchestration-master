@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-backend-app
+  labels:
+    app: my-pod-label
+    tier: backend
+spec:
+  containers:
+  - name: backend-container
+    image: myapp-backend:latest
