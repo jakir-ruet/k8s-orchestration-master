@@ -1248,6 +1248,35 @@ cat /usr/local/etc/haproxy/haproxy.cfg
 
 #### [Kubernetes Install & Configuration](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 
+##### Enable `bash` completion & Setup `kubectl` autocompletion
+
+```bash
+sudo apt install bash-completion
+echo "source /etc/bash_completion" >> ~/.bashrc # for bashrc
+echo 'source <(kubectl completion bash)' >> ~/.bashrc # for bashrc
+echo 'source <(kubectl completion zsh)' >> ~/.zshrc # for zshrc
+source ~/.bashrc # for bashrc
+source ~/.zshrc # for zshrc
+```
+
+##### Add your aliases to `.bashrc`
+
+```bash
+echo "alias k=kubectl" >> ~/.bashrc
+echo "alias kg='kubectl get'" >> ~/.bashrc
+echo "alias kgno='kubectl get node'" >> ~/.bashrc
+echo "alias kgpo='kubectl get pod'" >> ~/.bashrc
+```
+
+##### Add your aliases to `.zshrc`
+
+```bash
+echo "alias k=kubectl" >> ~/.zshrc
+echo "alias kg='kubectl get'" >> ~/.zshrc
+echo "alias kgno='kubectl get node'" >> ~/.zshrc
+echo "alias kgpo='kubectl get pod'" >> ~/.zshrc
+```
+
 **Basic Commands:**
 
 |  SL   | Command                                                            | Explanation                            |
