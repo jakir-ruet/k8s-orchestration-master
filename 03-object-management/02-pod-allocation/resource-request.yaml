@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-request-app
+  labels:
+    name: resource-request-app
+spec:
+  containers:
+    - name: resource-request-app-nginx
+      image: alpine
+      command:
+        - sleep
+        - '3600'
+      resources:
+        limits:
+          memory: "64Mi"
+          cpu: "1000m"
+  nodeSelector:
+   disktype: ssd

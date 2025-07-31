@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: own-nginx-ingress-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: own-nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: own-nginx-ingress
+    spec:
+      containers:
+      - name: own-nginx-ingress
+        image: jakirbd/own-nginx-ingress:latest
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            apt-get update && apt-get install -y curl && nginx -g 'daemon off;'
+        ports:
+        - containerPort: 8080

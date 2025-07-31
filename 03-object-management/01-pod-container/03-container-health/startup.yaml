@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-http-startup-probe
+  labels:
+    name: liveness-http-startup-probe
+spec:
+  containers:
+  - name: liveness-http-startup-nginx
+    image: k8s.gcr.io/nginx
+    startupProbe:
+      httpGet:
+        path: /
+        port: 80
+      failureThreshold: 30
+      periodSeconds: 10

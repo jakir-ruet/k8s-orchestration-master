@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-first-volume
+spec:
+  containers:
+    - name: my-first-volume
+      image: alpine
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - name: my-first-volume-map
+          mountPath: /etc/config/configMap
+        - name: my-first-secret
+          mountPath: /etc/config/secret
+  volumes:
+    # We set volumes at the Pod level, then mount them into containers inside that Pod
+    - name: my-first-volume-map
+      configMap:
+        # Give the name of the ConfigMap we want to mount.
+        name: my-first-volume
+    - name: my-first-volume-secret
+      secret:
+        secretName: my-first-volume-secret
