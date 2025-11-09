@@ -1,6 +1,8 @@
 #### Welcome to K8s [Securing](https://kubernetes.io/docs/concepts/security/)
+
 Kubernetes security is a broad topic due to the sophistication of the platform. It includes secure Kubernetes **nodes**, **networks**, and Kubernetes objects such as **Pods**. The Cloud Native Computing Foundation (CNCF) defines Kubernetes security in layers, which they call the four Cs of cloud-native security, taking the topic of security beyond Kubernetes and its ecosystem. The **four C**s stand for **Cloud**, **Cluster**, **Container**, and **Code**, as shown in the following diagram:
 ![K8s Security Layer](/img/security/security-layer.png)
+
 - Cloud
   it is managed by the cloud provider when it is in the cloud or by the organization when it comes to a private data center.
 - Cluster
@@ -18,6 +20,7 @@ In Kubernetes, we have a distinction between normal user accounts and service ac
 
 **K8s Authorization**
 A request must be authenticated before it can be authorized with permissions granted to access the Kubernetes cluster resources. There are four authorization modes in Kubernetes:
+
 1. RBAC authorization:
    K8s RBAC is more about regulating access to Kubernetes resources according to the roles with specific permissions to perform a specific task, such as reading, creating, or modifying through an API request. We’ll focus on Kubernetes RBAC in this section.
 2. Node authorization:

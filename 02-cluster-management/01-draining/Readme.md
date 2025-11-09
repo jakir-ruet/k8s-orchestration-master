@@ -1,10 +1,11 @@
 #### Lets me check whether any pod available in cluster
+
 In Kubernetes, "draining" a node refers to the process of safely evicting all the pods from a node in preparation for maintenance, decommissioning, or other administrative tasks. Draining ensures that the node can be taken out of service without disrupting the overall operation of the Kubernetes cluster.
 
 ```bash
 kubectl get pods -o wide
 # create 'my-draining-pod.yaml' for pod
-kubectl apply -f my-draining-pod.yaml 
+kubectl apply -f my-draining-pod.yaml
 # create 'deployment.yaml'
 kubectl apply -f deployment.yaml
 kubectl get pods -o wide
@@ -16,6 +17,7 @@ kubectl uncordon worker1
 kubectl get node
 kubectl get pods -o wide
 ```
+
 | Command                                                             | Purpose                           | Effect                                                         | Typical Use Cases                                        |
 | ------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
 | `kubectl cordon <node-name>`                                        | Mark a node as unschedulable      | Prevents new pods from being scheduled on the node             | Preparing for maintenance, testing without new workloads |

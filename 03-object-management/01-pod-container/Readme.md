@@ -1,9 +1,12 @@
 In K8s [pod](https://kubernetes.io/docs/concepts/workloads/pods/) & [container](https://kubernetes.io/docs/concepts/containers/) is basic building block of execution of a application. Complete knowledge of pod & container is very necessary. We are going learn here as follows
+
 1. Application [configuration](https://kubernetes.io/docs/concepts/configuration/) management
-  - [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)
-  - [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
-  - [Env variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
-  - [Volumes configuration](https://kubernetes.io/docs/concepts/storage/volumes/)
+
+- [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)
+- [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
+- [Env variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
+- [Volumes configuration](https://kubernetes.io/docs/concepts/storage/volumes/)
+
 2. Container resources management
 3. Container health monitoring
 4. Building self healing pods
@@ -23,18 +26,23 @@ In K8s [pod](https://kubernetes.io/docs/concepts/workloads/pods/) & [container](
 | Logging & Monitoring | Logs collected per container but can be aggregated at the Pod level.                      | Logs specific to the container's application.               |
 
 ***ConfigMaps commands*** is execute the command two ways.
+
 - Via Config File
+
 ```bash
 kubectl create configmap my-config --from-literal=key1=value1 --from-literal=key2=value2 # from literal
 kubectl create configmap my-config --from-file=path/to/config/file # from file
 kubectl create configmap my-config --from-file=path/to/directory # from directory
 ```
+
 - Via CLI
+
 ```bash
 kubectl get configmap [ConfigMapName] -o yaml/json
 ```
 
 Sample ConfigMap
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -44,7 +52,9 @@ data:
   key1: value1
   key2: value2
 ```
+
 Accessing ConfigMaps in Pods
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -66,7 +76,9 @@ spec:
           name: my-config
           key: key2
 ```
+
 Mount ConfigMaps as volumes
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -85,7 +97,9 @@ spec:
     configMap:
       name: my-config
 ```
+
 Manage
+
 ```bash
 kubectl get configmap my-config -o yaml
 kubectl edit configmap my-config
@@ -93,6 +107,7 @@ kubectl delete configmap my-config
 ```
 
 ***Secrets*** is execute the command following below way.
+
 ```bash
 kubectl create secret generic my-secret --from-literal=username=my-user --from-literal=password=my-pass # generic
 kubectl create secret generic my-secret --from-file=path/to/secret/file # from file
@@ -101,9 +116,11 @@ kubectl create secret generic [DB-USER-PASSWORD] --from-file=./username.txt --fr
 kubectl get secrets
 kubectl describe secrets [SecretName]
 ```
+
 ***Note:*** `$`, `\`, `*`, `!` are require to escape.
 
 Secret
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -116,6 +133,7 @@ data:
 ```
 
 Accessing Secrets in Pods
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -139,6 +157,7 @@ spec:
 ```
 
 Mount Secrets as volumes
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -157,7 +176,9 @@ spec:
     secret:
       secretName: my-secret
 ```
+
 View the secret & decode data
+
 ```bash
 kubectl get secret my-secret -o yaml
 echo 'bXktdXNlcg==' | base64 --decode

@@ -1,5 +1,7 @@
 #### Welcome to Object Management
+
 Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Kubernetes object is also know as `Kubernetes Primitive`.
+
 - Pods
 - ReplicaSet
 - DaemonSet
@@ -7,7 +9,8 @@ Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes 
 - Job CronJob
 - Deployment
 
-Difference & Comparison of `kubectl apply`  & `kubectl create` 
+Difference & Comparison of `kubectl apply`  & `kubectl create`
+
 | Aspect                | `kubectl apply`                                                                              | `kubectl create`                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Purpose               | Updates and manages resources declaratively                                                  | Creates new resources imperatively                                      |
@@ -24,6 +27,7 @@ NB:
 Idempotency is a concept in computer science and programming that refers to the property of certain operations that can be applied multiple times without changing the result beyond the initial application.
 
 Necessary commands
+
 - Kubectl get
 - Kubectl describe
 - Kubectl create
@@ -32,6 +36,7 @@ Necessary commands
 - Kubectl exec
 
 K8s RBAC Management
+
 - Object
   - ***Roles*** (Define permission only within namespace in cluster)
     After assign the permission ***RoleBinding*** to the specific user 😐.

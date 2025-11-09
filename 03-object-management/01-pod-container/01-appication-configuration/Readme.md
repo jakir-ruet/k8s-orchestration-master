@@ -1,4 +1,5 @@
 Step of application configuration
+
 - Create ConfigMap Object
 - Describe ConfigMap
 - Create Secrets Object
@@ -13,6 +14,7 @@ kubectl get configmap my-first-configmap
 kubectl describe configmap my-first-configmap
 kubectl delete configmap configmapName
 ```
+
 ```bash
 echo -n 'admin' | base64 # find user hash value
 echo -n 'adminadmin' | base64 # find password hash value
@@ -21,7 +23,9 @@ kubectl get secret
 kubectl describe configmap mmy-first-secret
 kubectl delete configmap configmapName
 ```
+
 User Env Variable connecting ConfigMap to Secret. By creating as belows yaml files configure
+
 ```bash
 kubectl apply -f my-first-configmap-env.yaml
 kubectl get pod

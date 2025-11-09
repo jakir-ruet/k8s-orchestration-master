@@ -1,12 +1,14 @@
 #### Welcome to maintaining-clusters
+
 - High Availability?
   A highly available configuration where multiple nodes work together to ensure that applications and services remain continuously operational even if parts of the system fail. This involves distributing components across multiple nodes and zones, using redundancy and failover mechanisms to prevent single points of failure, and ensuring that there are always enough resources to handle the workload.
 - HA Control Plane
   - Multiple API Servers
-  - etcd Cluster 
+  - etcd Cluster
     - Odd number quorum (Min No. of Node) member [Recommended]
     - Find Quorum (`Majority`) by this Formula `Quorum = N/2 + 1`); Where, N is Node.
-    - Table 
+    - Table
+
       | Instance (`Node`) | Quorum (`Majority`) | Fault Tolerance (`C1-C2`) |
       | :---------------: | :-----------------: | :-----------------------: |
       |         1         |          1          |             0             |
@@ -18,6 +20,7 @@
       |       **7**       |          4          |             3             |
       |         8         |          5          |             3             |
       |         9         |          5          |             4             |
+
     - Instance/Node/Manager is Recommended (Odd).
   - Controller Manager &
   - Scheduler
@@ -28,7 +31,7 @@
     ![External Etcd](/img/high-availability/external-etcd.png)
 - K8s Management Tools
   - Kubectl
-    - Kubectl is oﬃcial CLI for K8s.
+    - Kubectl is official CLI for K8s.
     - We will see using kubectl thought-out this course.
   - Kubeadm
     - Kubeadm tool is used to easily creating the K8s Cluster.
@@ -47,12 +50,14 @@
     - Similar to Helm and have ability to create re-useable templates for K8s.
 
 #### Lets get started Drain/Remove Node From Cluster
+
 - Node Draining
 - How to Drain a Node
 - Ignore DaemonSets
 - Uncordoning a Node
 
 #### Lets get started Upgrade the cluster
+
 - Master node upgrade
   - Drain node
   - Upgrade plan

@@ -1,8 +1,11 @@
 ### Welcome to Demystifying Storage
+
 #### Container Storage Interface (CSI)
+
 It is a specification that defines a standard for exposing ***block*** and ***file storage systems*** to containerized workloads on Container Orchestration Systems (COS) like Kubernetes. Its offers several benefits and addresses various challenges related to storage management in containerized environments.
 
 Features
+
 - Integrate different storage system with K8s
 - Supports to multiple storage options
 - Dynamic storage provisioning
@@ -11,6 +14,7 @@ Features
 A volume can support local storage, on-premises software-defined storage, cloud-based storage (such as blob, block, or file storage), or a network file system (NFS).
 
 Types of volume in K8s
+
 1. Ephemeral volume
    Its targeted to the application need to hold the data, but they don’t care about data loss in the case that the pod fails or restarts – the lifecycle of the ephemeral volume is aligned with the pod lifecycle. Several types of ephemeral volume
 
@@ -18,7 +22,7 @@ Types of volume in K8s
    - CSI Ephemeral volumes (Driver compatible volumes, provide external storage)
    - Generic Ephemeral volumes (its general drivers with some additional features available such as snapshotting, storage cloning, storage resizing, and storage capacity tracking)
    - Projected volumes (Configuration data is mounted to the Kubernetes pods – this data was injected into a pod through the sidecar pattern)
-   
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -34,7 +38,7 @@ spec:
 
 2. Persistent volume
    Its independent type of storage, means keeping some data or information to continue beyond the life of the container when the container is deleted or replaced. K8s allows us to work with persistent storage through the notion of persistent volumes and persistent volume claims:
-   
+
    - Persistent Volume (PV)
      It is a storage resources provisioned dynamically based on the storage classes with a set of features to fulfill the user’s requirements.
    - Persistent Volume Claim (PVC)
@@ -55,7 +59,6 @@ accessModes:
      requests:
         storage: 512Mi
 ```
-
 
 [The Storage Class](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 The StorageClass resource in Kubernetes classifies the Kubernetes storage class. As a matter of fact, a StorageClass contains a provisioner, parameters, and reclaimPolicy field. For example of different provisioners are ***Azure Disk***, ***AWS EBS***, and ***Glusterfs***.
@@ -82,12 +85,14 @@ volumeBindingMode: Immediate # or WaitForFirstConsumer
 ```
 
 Volume modes
-It is indicate the type of consumption of the volume – this can either be a 
+It is indicate the type of consumption of the volume – this can either be a
+
 - ***filesystem*** or a (When volumeMode is set to Filesystem, it mounts into the pods as a directory)
 - ***block device*** (When volumeMode is set to Block, we use it as a raw block)
 
 Access modes
 When a PV is mounted to a pod, we can specify different access modes. The access modes represent the way that the data in the storage resources is being consumed. They can be summarized as shown in the following table:
+
 |  SL   | Access modes     | Abbreviated |
 | :---: | :--------------- | :---------: |
 |   1   | ReadWriteOnce    |     RWO     |
