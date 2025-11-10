@@ -1,15 +1,17 @@
-#### Welcome to Object Management
+### Object Management in Kubernetes
 
-Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Kubernetes object is also know as `Kubernetes Primitive`.
+Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the desired state of your cluster. These objects are sometimes referred to as Kubernetes Primitives.
 
-- Pods
-- ReplicaSet
-- DaemonSet
-- StatefulSet
-- Job CronJob
-- Deployment
+#### Common Kubernetes objects include
 
-Difference & Comparison of `kubectl apply`  & `kubectl create`
+- `Pods` – The smallest deployable unit, representing one or more containers.
+- `ReplicaSet` – Ensures a specified number of Pod replicas are running at all times.
+- `DaemonSet` – Ensures a copy of a Pod runs on all (or selected) nodes.
+- `StatefulSet` – Manages stateful applications with unique, persistent identities.
+- `Job/CronJob` – Executes tasks one-time (Job) or periodically (CronJob).
+- `Deployment` – Declaratively manages Pod replicas and updates.
+
+#### Difference & Comparison of `kubectl apply`  & `kubectl create`
 
 | Aspect                | `kubectl apply`                                                                              | `kubectl create`                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -23,22 +25,6 @@ Difference & Comparison of `kubectl apply`  & `kubectl create`
 | Annotations           | Adds `kubectl.kubernetes.io/last-applied-configuration` annotation for tracking changes      | Does not add such annotations                                           |
 | Command               | `kubectl apply -f <filename>`                                                                | `kubectl create -f <filename>`                                          |
 
-NB:
+> NB:
+
 Idempotency is a concept in computer science and programming that refers to the property of certain operations that can be applied multiple times without changing the result beyond the initial application.
-
-Necessary commands
-
-- Kubectl get
-- Kubectl describe
-- Kubectl create
-- Kubectl apply
-- Kubectl delete
-- Kubectl exec
-
-K8s RBAC Management
-
-- Object
-  - ***Roles*** (Define permission only within namespace in cluster)
-    After assign the permission ***RoleBinding*** to the specific user 😐.
-  - ***ClusterRoles*** (Define permission across the cluster. Not limited to specific namespace)
-    After assign the permission ***ClusterRoleBinding*** to the specific user 😐.

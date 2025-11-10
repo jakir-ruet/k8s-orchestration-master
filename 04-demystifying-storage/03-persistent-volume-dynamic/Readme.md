@@ -1,5 +1,3 @@
-## Welcome to Persistent Volume (Static Provision) Session in Kubernetes
-
 ### Applying all manifests file
 
 ```bash
@@ -72,4 +70,4 @@ USE DatabaseName;
 SHOW TABLES;
 ```
 
-**NB**: No longer exists the MySQL database
+> NB: No longer exists the MySQL database

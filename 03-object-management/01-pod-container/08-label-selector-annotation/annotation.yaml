@@ -1,0 +1,4 @@
+metadata:
+  annotations:
+    owner: "devops-team@example.com"
+    description: "Frontend API Pod serving user requests"

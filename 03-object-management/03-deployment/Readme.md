@@ -1,106 +1,95 @@
-**Deployments**
+### Deployments
+
 A Deployment manages a set of Pods to run an application workload, usually one that doesn't maintain state. A Deployment provides declarative updates for `Pods` and `ReplicaSets`.
 
-**Feature**
+> Feature
 
-- Declarative Updates
-- Scaling
-- Rolling Updates
-- Rollback
-- Self-Healing
-- Declarative Configuration
+- `Declarative Updates` – Define the desired state; Kubernetes handles the rest.
+- `Scaling` – Supports both horizontal and vertical scaling.
+- `Rolling Updates` – Gradually update Pods with zero downtime.
+- `Rollback` – Revert to a previous version of the deployment if something goes wrong.
+- `Self-Healing` – Automatically replaces failed Pods.
+- `Declarative Configuration` – Use YAML/JSON manifests to describe the desired state.
 
-**Use Cases**
+> Use Cases
 
 - Stateless Applications
 - Continuous Delivery
 - Blue-Green and Canary Deployments
 
-Application scaling
+#### Application scaling
 
-- app scaling
-  - vertical scaling (up-down)
-  - horizontal scaling (left-right)
-- stateless application
-  - not save any data
-  - not maintain the state for next state
-  - can be scaled horizontally
-- stateful application
-  - save data (cannot split multiple instances)
-  - maintain the state for next state
-  - can be scaled vertically
-- replication controller
-  - manage the app scaling
-  - ensure the specified of pod replicas are running at any point of time
-  - ensure a pod/set of pod is always up & available
+1. app scaling
+   - Vertical Scaling (up-down) – Increase resources (CPU, RAM) for a Pod.
+   - Horizontal Scaling (left-right) – Add more Pod replicas to handle more traffic.
+2. Stateless vs Stateful Applications
 
-Horizontal scale
+| Type      | Characteristics                                      | Scaling                                                                  |
+| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| Stateless | Doesn’t save data, no state carried between requests | Can scale horizontally                                                   |
+| Stateful  | Saves data, maintains state                          | Typically scales vertically; requires StatefulSet for multiple instances |
 
-```bash
-kubectl scale --replicas=numberOfPod replicationcontroller/repicationControllerName
-# here create more 3 pods (previous 3 + 3)
-kubectl scale --replicas=6 replicationcontroller/my-replica-controller
-# descale I mean remove 3 recently created pods
-kubectl scale --replicas=3 replicationcontroller/my-replica-controller
-# delete all pod using this command
-kubectl delete -f replication-controller.yaml
-```
+3. Replication Controller
+   - manage the app scaling
+   - Ensures a specified number of Pod replicas are running.
+   - Manages lifecycle and ensures availability of Pods.
 
-```bash
-kubectl apply -f deployment.yaml
-kubectl get deployment nginx-deployment
-kubectl rollout status deployment deployment
-kubectl describe deployment
-kubectl rollout history deployment/nginx-deployment
-kubectl rollout status deployment
-kubectl describe deployment
-kubectl delete -f deployment.yaml
-```
+### ReplicaSet
 
-**ReplicaSet**
+A ReplicaSet (RS) in Kubernetes is a controller that ensures a specified number of pod replicas are running at all times. It's usually managed by a Deployment, not directly.
 
-- ReplicaSet?
-- ReplicaSet vs ReplicationController
-- ReplicaSet vs Bare Pods (Standalone Pods)
-
-**ReplicaSet**: A ReplicaSet in Kubernetes is a controller that ensures a specified number of pod replicas are running at any given time. It maintains a stable set of replica pods, even if some of them fail or are unexpectedly terminated, making sure the desired number of replicas is always available.
-
-**ReplicationController**: A ReplicationController in Kubernetes is an older mechanism for ensuring that a specified number of pod replicas are running at any given time. Similar to a ReplicaSet, a ReplicationController manages the lifecycle of a set of pods, ensuring that the desired number of replicas is always available.
-
-**Bare Pods (Standalone Pods)**: Bare Pods (Standalone Pods) are Kubernetes pods that are not managed by any higher-level controller like a Deployment, ReplicaSet, StatefulSet, or DaemonSet. They are created directly and manually, without using any of the Kubernetes workload controllers that provide additional features like replication, rolling updates, and self-healing.
-
-ReplicaSet vs ReplicationController
-
-- ReplicaSet is enhanced version of ReplicationController
-- ReplicaSet support for [set-based & equality-based](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) selectors but ReplicationController not support
-- ReplicaSet generally used with deployments
-- ReplicaSet
+> Purpose: Maintains a stable set of pods; if some pods fail or are deleted, RS creates new ones to match the desired number.
 
 ```bash
 spec:
-   replicas: 3
-   selector:
-   matchExpression:
+  replicas: 3
+  selector:
+    matchExpressions:
       - {key: app, operator: In, values: [example, example, rs]}
       - {key: tier, operator: NotIn, values: [production]}
-   template:
-      metadata:
+  template:
+    metadata:
 ```
 
-- ReplicationController
+### Replication Controller
+
+An older Kubernetes controller that also ensures a specified number of pod replicas are running. Mostly deprecated in favor of ReplicaSets.
+
+> Comparison: RC provides similar functionality to a ReplicaSet but lacks some advanced features like set-based selectors.
 
 ```bash
 spec:
-   replicas: 3
-   selector:
-      app: alpine-app
-   template:
-      metadata:
+  replicas: 3
+  selector:
+    app: alpine-app
+  template:
+    metadata:
 ```
 
-| Bare Pod                                | ReplicaSet                                                    |
-| :-------------------------------------- | :------------------------------------------------------------ |
-| Its not have labels                     | Its have labels                                               |
-| Suitable for simple, non-critical tasks | Suitable for production workloads requiring high availability |
-| not self-healing, and not scalability   | self-healing, and scalability                                 |
-| No Scaling                              | Scaling                                                       |
+### Bare Pods (Standalone Pods)
+
+Pods that are not managed by any higher-level controller (`Deployment`, `ReplicaSet`, `StatefulSet`, `DaemonSet`).
+
+> Characteristics:
+
+- Created manually via kubectl run or YAML.
+- No self-healing or automated scaling.
+- Good for testing or temporary workloads.
+
+#### ReplicaSet vs ReplicationController
+
+| Feature         | ReplicaSet                              | ReplicationController       |
+| --------------- | --------------------------------------- | --------------------------- |
+| Selector type   | Supports **set-based & equality-based** | Only **equality-based**     |
+| Typical usage   | Used with **Deployments**               | Standalone, older workloads |
+| Features        | Self-healing, scalable                  | Basic replication only      |
+| Rolling updates | Indirectly via Deployment               | Not supported               |
+
+#### ReplicaSet vs Bare Pods
+
+| Bare Pod                               | ReplicaSet                        |
+| -------------------------------------- | --------------------------------- |
+| No labels                              | Has labels                        |
+| Suitable for simple/non-critical tasks | Suitable for production workloads |
+| Not self-healing                       | Self-healing                      |
+| No scaling                             | Supports scaling (via Deployment) |

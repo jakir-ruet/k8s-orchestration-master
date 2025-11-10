@@ -1,7 +1,8 @@
+### Resource scheduling
 
-Resource scheduling in Kubernetes involves allocating resources such as CPU and memory to containers and ensuring that Pods are optimally placed on nodes within a cluster. Kubernetes uses a scheduler to determine which node an unscheduled Pod should run on based on resource requests, constraints, and policies.
+Resource scheduling in Kubernetes involves allocating resources such as `CPU` and `memory` to containers and ensuring that Pods are optimally placed on nodes within a cluster. Kubernetes uses a scheduler to determine which node an unscheduled Pod should run on based on resource requests, constraints, and policies.
 
-Ways of resources allocation or scheduling
+#### Ways of resources allocation or scheduling
 
 - Node Selector
 - Node Affinity & Anti-Affinity
@@ -9,71 +10,104 @@ Ways of resources allocation or scheduling
 - Resource Requests and Limits
 - [Priority Classes](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass)
 
-**Node Selector** allows you to assign  pods to specific node that have specific labels & its working in key-value pairs. For example `disktype:ssd` or `env=production` etc. Limitations
+#### Node Selector
 
-- Static Scheduling
-- Lack of Affinity/Anti-Affinity Rules
+Assigns Pods to nodes with specific labels (key-value pairs), like `disktype:ssd` or `env=production`.
 
-**Node Affinity & Anti-Affinity** A more expressive and flexible way to control pod scheduling based on node labels. Node affinity supports `requiredDuringSchedulingIgnoredDuringExecution` (similar to nodeSelector) and `preferredDuringSchedulingIgnoredDuringExecution` (soft rules or preferences).
+> Limitations
 
-**Taints & Tolerations**: Taints and Tolerations are concepts in Kubernetes that help control the scheduling of pods to nodes, ensuring that certain workloads run on specific nodes or are prevented from running on unsuitable ones.
-
-- **Taints** are markers applied to nodes that repel certain pods from being scheduled on them.
-- **Tolerations** are properties applied to pods that allow them to be scheduled on nodes with specific taints.
-
-Scheduling Process
-
-- Filtering
-- Scoring
-- Binding
-
-For fulfilling this section we need a master node & at least two nodes.
-
-Pod schedule to specified node using `node-selector`
+- Static scheduling only
+- No support for soft preferences or anti-affinity rules
 
 ```bash
-kubectl get pod
-kubectl get pod -o wide
-kubectl get nodes --show-labels
-kubectl label nodes nodeName assignLabel # assign expected label to node
-kubectl label nodes workerone-plane disktype=ssd
-kubectl get pod
-kubectl get pod -o wide
+kubectl label nodes worker-node-1 disktype=ssd
+kubectl get pods -o wide
 ```
 
-**DaemonSet:**
-A DaemonSet in Kubernetes is a controller that ensures a copy of a specified pod runs on all (or some) nodes in the cluster. It is particularly useful for deploying system-level services and background tasks that need to run on every node.
+#### Node Affinity & Anti-Affinity
 
-- When a new node is added to the cluster, the DaemonSet automatically deploys the pod on the new node.
-- When a node is removed from the cluster, the pod managed by the DaemonSet is also removed.
-- Updating the DaemonSet template triggers a rolling update across all nodes where the DaemonSet is deployed.
-- Supports the ability to perform rolling updates to update pods incrementally.
+More flexible and expressive than NodeSelector. Controls Pod placement based on node labels with hard or soft rules.
 
-**Use Cases**
+##### Types of Node Affinity
 
-- ***System Monitoring:*** Deploying monitoring agents like `Prometheus` Node Exporter or DataDog agents to gather metrics from every node.
-- ***Log Collection:*** Running logging agents like `Fluentd` or Logstash on each node to collect and forward logs.
-- ***Networking:*** Managing network plugins like `Calico` or Weave Net that need to run on every node for consistent network policy enforcement.
-- ***Security:*** Deploying security agents like `Falco` to monitor and enforce security policies across the cluster.
+1. `requiredDuringSchedulingIgnoredDuringExecution`
+   - Hard requirement.
+   - Pod will not schedule unless the rule is satisfied.
 
-**Static**: A static pod in Kubernetes is a pod that is directly managed by the `kubelet` (the node agent) on a specific node, rather than by the Kubernetes API server. Static pods are primarily used for `bootstrapping`, `running essential components`, or when you need to ensure that certain pods are always running on a particular node, even if the Kubernetes control plane is not fully functional.
+2. `preferredDuringSchedulingIgnoredDuringExecution`
+   - Soft preference.
+   - Scheduler tries to place the Pod according to the rule but can override if needed.
 
-**Characteristics**
+##### Affinity vs Anti-Affinity
+
+- `Affinity:` Prefer or require Pods on nodes with specific labels.
+- `Anti-Affinity:` Prefer or require Pods not to be scheduled on nodes with specific labels.
+
+#### Taints & Tolerations
+
+- `Taints:` Applied to nodes to repel Pods.
+- `Tolerations:` Applied to Pods to allow them on tainted nodes.
+- Ensures that Pods only schedule on suitable nodes.
+
+#### Scheduling Process
+
+- `Filtering:` Remove nodes that cannot satisfy Pod constraints.
+- `Scoring:` Rank remaining nodes based on preferences.
+- `Binding:` Assign Pod to the best-scored node.
+
+#### Resource Requests and Limits
+
+- Define how much CPU and memory a Pod requests and the maximum it can use.
+- Helps the scheduler make placement decisions and prevents resource contention.
+
+### DaemonSet
+
+A DaemonSet ensures a copy of a Pod runs on all or selected nodes in a cluster, ideal for system-level services and background tasks.
+
+> Key Features:
+
+- Automatically deploys Pods to new nodes and removes them from deleted nodes.
+- Supports rolling updates across all nodes.
+- Incrementally updates Pods when the template changes.
+
+> Use Cases:
+
+- `System Monitoring:` Prometheus Node Exporter, DataDog agents
+- `Log Collection:` Fluentd, Logstash
+- `Networking:` Calico, Weave Net
+- `Security:` Falco agents
+
+### Static pod
+
+A Static Pod is managed directly by the kubelet on a specific node, not the API server.
+
+> Characteristics:
 
 - Managed by Kubelet
-- No Replication Controller
-- Persistent on Node
-- No API Object
-- Manual Management:
+- No replication controller
+- Persistent on node
+- No API object
+- Requires manual management
 
-**Use Cases**
+> Use Cases:
 
-- Bootstrapping Control Plane Components
-- Running Critical Node Services
-- Disaster Recovery
+- Bootstrapping control plane components
+- Running critical node services
+- Disaster recovery
 
-**CronJob:**
+### CronJob
+
 CronJob is used to run jobs on a schedule. A CronJob creates Jobs on a repeating schedule.
+
+> Cron Syntax Explanation:
+
+* * * * *
+│ │ │ │ │
+│ │ │ │ └─ Day of week (0-6 or sun-sat)
+│ │ │ └── Month (1-12)
+│ │ └─── Day of month (1-31)
+│ └──── Hour (0-23)
+└───── Minute (0-59)
 
 ```yaml
 apiVersion: batch/v1
@@ -95,18 +129,4 @@ spec:
             - -c
             - date; echo Hello from the Kubernetes cluster
           restartPolicy: OnFailure
-```
-
-Explain
-
-```yaml
-# ┌───────────── minute (0 - 59)
-# │ ┌───────────── hour (0 - 23)
-# │ │ ┌───────────── day of the month (1 - 31)
-# │ │ │ ┌───────────── month (1 - 12)
-# │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
-# │ │ │ │ │                                   OR sun, mon, tue, wed, thu, fri, sat
-# │ │ │ │ │
-# │ │ │ │ │
-# * * * * *
 ```

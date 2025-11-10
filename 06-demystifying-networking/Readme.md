@@ -1,6 +1,4 @@
-### Welcome to Demystifying Networking
-
-#### Networking Model
+### Networking Model
 
 Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `external clients` to communicate inside a Kubernetes cluster.
 
@@ -10,7 +8,7 @@ Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `e
   - Services provide stable IPs to reach dynamic Pods
   - No NAT is required for Pod-to-Pod communication
 
-##### Networking Models
+#### Networking Models
 
 1. Pod-to-Pod Communication
    - Pods can communicate across nodes using their IPs.
@@ -28,19 +26,18 @@ Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `e
    - LoadBalancer (via cloud)
    - Ingress (layer 7 routing)
 
-##### What Enables Kubernetes Cluster Networking — Combined View
+#### What Enables Kubernetes Cluster Networking — Combined View
 
-| Communication Type   | Enabled By                           | Description                                                       |
-| -------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| Pod → Pod            | ✅ CNI Plugin (e.g., Calico, Flannel) | Ensures all Pods can reach each other across nodes with real IPs  |
-| Pod → Service        | ✅ kube-proxy + iptables/IPVS         | Forwards traffic from ClusterIP to backend Pods                   |
-| Pod → External World | ✅ NAT via node or egress gateway     | Lets Pods reach the internet                                      |
-| Node → Pod           | ✅ CNI routing                        | Nodes can talk to any Pod via Pod IP                              |
-| External → Cluster   | ✅ NodePort / LoadBalancer / Ingress  | Enables access to services from outside the cluster               |
-| Service Discovery    | ✅ CoreDNS                            | Resolves service names to ClusterIP addresses                     |
-| Traffic Routing      | ✅ kube-proxy + iptables              | Handles traffic rules for services and endpoints                  |
-| Traffic Restriction  | ✅ NetworkPolicy + CNI                | Controls which Pods can talk to each other (requires CNI support) |
-
+| Communication Type   | Enabled By                         | Description                                                       |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------------- |
+| Pod → Pod            | CNI Plugin (e.g., Calico, Flannel) | Ensures all Pods can reach each other across nodes with real IPs  |
+| Pod → Service        | kube-proxy + iptables/IPVS         | Forwards traffic from ClusterIP to backend Pods                   |
+| Pod → External World | NAT via node or egress gateway     | Lets Pods reach the internet                                      |
+| Node → Pod           | CNI routing                        | Nodes can talk to any Pod via Pod IP                              |
+| External → Cluster   | NodePort / LoadBalancer / Ingress  | Enables access to services from outside the cluster               |
+| Service Discovery    | CoreDNS                            | Resolves service names to ClusterIP addresses                     |
+| Traffic Routing      | kube-proxy + iptables              | Handles traffic rules for services and endpoints                  |
+| Traffic Restriction  | NetworkPolicy + CNI                | Controls which Pods can talk to each other (requires CNI support) |
 
 ##### Type of services
 

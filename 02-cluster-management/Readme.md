@@ -1,72 +1,34 @@
-#### Welcome to maintaining-clusters
+### Cluster Upgrade Process Overview
 
-- High Availability?
-  A highly available configuration where multiple nodes work together to ensure that applications and services remain continuously operational even if parts of the system fail. This involves distributing components across multiple nodes and zones, using redundancy and failover mechanisms to prevent single points of failure, and ensuring that there are always enough resources to handle the workload.
-- HA Control Plane
-  - Multiple API Servers
-  - etcd Cluster
-    - Odd number quorum (Min No. of Node) member [Recommended]
-    - Find Quorum (`Majority`) by this Formula `Quorum = N/2 + 1`); Where, N is Node.
-    - Table
+- Upgrade Control Plane Node
+- Upgrade any other Control Plane Nodes
+- Upgrade Worker Nodes
 
-      | Instance (`Node`) | Quorum (`Majority`) | Fault Tolerance (`C1-C2`) |
-      | :---------------: | :-----------------: | :-----------------------: |
-      |         1         |          1          |             0             |
-      |         2         |          2          |             0             |
-      |       **3**       |          2          |             1             |
-      |         4         |          3          |             1             |
-      |       **5**       |          3          |             2             |
-      |         6         |          4          |             2             |
-      |       **7**       |          4          |             3             |
-      |         8         |          5          |             3             |
-      |         9         |          5          |             4             |
+#### Cluster Upgrade Process - Control Plane
 
-    - Instance/Node/Manager is Recommended (Odd).
-  - Controller Manager &
-  - Scheduler
-- Etch Management
-  - Stacked Etcd
-    ![Stacked Etcd](/img/high-availability/stacked-etch.png)
-  - External Etcd
-    ![External Etcd](/img/high-availability/external-etcd.png)
-- K8s Management Tools
-  - Kubectl
-    - Kubectl is official CLI for K8s.
-    - We will see using kubectl thought-out this course.
-  - Kubeadm
-    - Kubeadm tool is used to easily creating the K8s Cluster.
-    - Helping user to set-up and make cluster functional.
-  - Minikube (Kind & others)
-    - K8s Developers tool
-    - Local single node cluster
-  - Helm
-    - Powerful tool for K8s Template & Package Manager
-    - Use for complex multi config template.
-  - Kompose
-    - Translate Docker Compose files into a K8s Objects
-    - Ship containers from compose to K8s
-  - Kustomize
-    - Configuration management tool for K8s objects configuration
-    - Similar to Helm and have ability to create re-useable templates for K8s.
+- Update kubeadm package
+- kubeadm upgrade plan
+- kubeadm upgrade apply
+- Drain the Control Plane Node
+- Update kubelet and kubectl
+- Uncordon the Control Plane Node
 
-#### Lets get started Drain/Remove Node From Cluster
+### Cluster Upgrade Process - Worker Nodes
 
-- Node Draining
-- How to Drain a Node
-- Ignore DaemonSets
-- Uncordoning a Node
+- Update kubeadm
+- kubeadm upgrade node
+- Drain the Node
+- Update kubelet and kubectl
+- Uncordon Node
 
-#### Lets get started Upgrade the cluster
+### Upgrade Impact Overview
 
-- Master node upgrade
-  - Drain node
-  - Upgrade plan
-  - Apply upgrade
-  - Upgrade kubectl & kubelet
-  - Uncordon node & Join
-- Worker node upgrade
-  - Drain node
-  - Upgrade kubeadm
-  - Upgrade kubelet config
-  - Upgrade kubectl & kubelet
-  - Uncordon node
+| Aspect            | Master Node                                                | Worker Node                                             |
+| ----------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| Upgrade Order     | First                                                      | After the master nodes are upgraded                     |
+| Impact            | High-impacts the entire cluster's control plane operations | Moderate-impacts workloads running on the specific node |
+| Downtime          | Should be minimized; follow HA practices to reduce         | Minimal if done node-by-node with draining              |
+| Command           | `sudo kubeadm upgrade apply <version>`                     | `sudo kubeadm upgrade node`                             |
+| Drain Node        | No Required                                                | Yes, to safely migrate workloads `kubectl drain <node>` |
+| Risk              | Higher due to critical nature of components                | Lower, focused on individual node functionality         |
+| HA Considerations | Use multiple control plane nodes for zero downtime         | Upgrade nodes one at a time to maintain availability    |

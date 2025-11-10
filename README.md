@@ -1100,14 +1100,58 @@ In Kubernetes are checks performed by the kubelet to monitor the health and stat
 
 ### [Extending Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/)
 
-**Kubernetes Component Version Compatibility:**
+#### Kubernetes Component Version Compatibility
 
-- kube-apiserver [`x > v1.12`]
-- controller-manager [`x-1 > v1.11 or v1.12`]
-- kube-scheduler [`x-1 > v1.11 or v1.12`]
-- kubelet [`x-2 > v1.10 or v1.11`]
-- kube-proxy [`x-2 > v1.10 or v1.11`]
-- kubectl [`x-1, x+1 > v1.11, v1.13`]
+Kubernetes allows minor version skew between its components to make upgrades and rollbacks safer.
+Typically, components can differ by `one minor version (±1)`, depending on their role.
+
+| **Component**          | **Version Compatibility Rule**            | **If Control Plane = v1.12** | **Notes / Guidelines**                                  |
+| ---------------------- | ----------------------------------------- | ---------------------------- | ------------------------------------------------------- |
+| **kube-apiserver**     | `x` (acts as the version reference)       | v1.12                        | The API server defines the cluster’s version.           |
+| **controller-manager** | `x - 1` (may be one minor version older)  | v1.11 or v1.12               | Must not be newer than API server.                      |
+| **kube-scheduler**     | `x - 1` (may be one minor version older)  | v1.11 or v1.12               | Follows same rule as controller-manager.                |
+| **kubelet**            | `x - 2` (may be up to two versions older) | v1.10 or v1.11               | Must not be newer than the API server.                  |
+| **kube-proxy**         | `x - 2` (may be up to two versions older) | v1.10 or v1.11               | Follows same rule as kubelet.                           |
+| **kubectl (CLI)**      | `x - 1 ≤ kubectl ≤ x + 1`                 | v1.11 to v1.13               | Can safely communicate with older or newer API servers. |
+
+#### High Availability?
+
+High Availability refers to designing a system so that applications and services remain operational even during component failures. It involves redundancy, failover, and load balancing to prevent a single point of failure (SPOF).
+
+##### Core Concepts
+
+- `Multiple Nodes/Instances:` Components (e.g., API servers, etcd, controllers) are distributed across multiple machines or zones.
+- `Redundancy:` Backup components take over if one fails.
+- `Failover Mechanisms:` Automatic switchover to a healthy node when a primary fails.
+- `Resource Sufficiency:` Ensure there are always enough resources to handle load even after failures.
+
+##### etcd Cluster and Quorum
+
+In an etcd cluster, a `quorum (majority)` of nodes must agree for writes to succeed. The formula is `Quorum = N/2 + 1`. Where N is the total number of etcd nodes.
+
+| Instance (`Node`) | Quorum (`Majority`) | Fault Tolerance (`C1-C2`) |
+| :---------------: | :-----------------: | :-----------------------: |
+|         1         |          1          |             0             |
+|         2         |          2          |             0             |
+|       **3**       |        **2**        |           **1**           |
+|         4         |          3          |             1             |
+|       **5**       |        **3**        |           **2**           |
+|         6         |          4          |             2             |
+|       **7**       |        **4**        |           **3**           |
+|         8         |          5          |             3             |
+|         9         |          5          |             4             |
+
+> Where
+
+- Odd number quorum (Min No. of Node) member is Recommended.
+- Odd number of Instance/Node/Manager is Recommended.
+
+> Etch Management
+
+- Stacked Etcd
+  ![Stacked Etcd](/img/high-availability/stacked-etch.png)
+- External Etcd
+  ![External Etcd](/img/high-availability/external-etcd.png)
 
 ### Environment Setup (Two ways one is Minikube, another KIND) - `Minikube Recommended`
 

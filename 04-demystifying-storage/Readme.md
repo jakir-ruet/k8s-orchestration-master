@@ -1,27 +1,16 @@
-### Welcome to Demystifying Storage
+### Storage in Kubernetes
 
-#### Container Storage Interface (CSI)
-
-It is a specification that defines a standard for exposing ***block*** and ***file storage systems*** to containerized workloads on Container Orchestration Systems (COS) like Kubernetes. Its offers several benefits and addresses various challenges related to storage management in containerized environments.
-
-Features
-
-- Integrate different storage system with K8s
-- Supports to multiple storage options
-- Dynamic storage provisioning
-- Snapshotting & cloning
-- Seamless migration
-A volume can support local storage, on-premises software-defined storage, cloud-based storage (such as blob, block, or file storage), or a network file system (NFS).
+Kubernetes (K8s) is designed to manage containers, which are ephemeral by nature. This means that by default, any data written inside a container is lost if the pod restarts. To persist data, Kubernetes uses persistent storage solutions.
 
 Types of volume in K8s
 
 1. Ephemeral volume
    Its targeted to the application need to hold the data, but they don’t care about data loss in the case that the pod fails or restarts – the lifecycle of the ephemeral volume is aligned with the pod lifecycle. Several types of ephemeral volume
 
-   - emptyDir (its an empty directory when pod start, pod stop/restart directory deleted permanently)
-   - CSI Ephemeral volumes (Driver compatible volumes, provide external storage)
-   - Generic Ephemeral volumes (its general drivers with some additional features available such as snapshotting, storage cloning, storage resizing, and storage capacity tracking)
-   - Projected volumes (Configuration data is mounted to the Kubernetes pods – this data was injected into a pod through the sidecar pattern)
+- `emptyDir:` An empty directory created when the pod starts. Deleted when the pod stops or restarts.
+- `CSI Ephemeral Volumes:` Temporary volumes managed via CSI (Container Storage Interface) drivers, which allow external storage.
+- `Generic Ephemeral Volumes:` Provide additional features like snapshotting, cloning, resizing, and capacity tracking.
+- `Projected Volumes:` Used for mounting configuration data (e.g., secrets, config maps) into a pod, often using a sidecar pattern.
 
 ```yaml
 apiVersion: v1
@@ -60,8 +49,9 @@ accessModes:
         storage: 512Mi
 ```
 
-[The Storage Class](https://kubernetes.io/docs/concepts/storage/storage-classes/)
-The StorageClass resource in Kubernetes classifies the Kubernetes storage class. As a matter of fact, a StorageClass contains a provisioner, parameters, and reclaimPolicy field. For example of different provisioners are ***Azure Disk***, ***AWS EBS***, and ***Glusterfs***.
+3. [The Storage Class](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+The StorageClass resource in Kubernetes classifies the Kubernetes storage class. As a matter of fact, a StorageClass contains a provisioner, parameters, and reclaimPolicy field. For example of different provisioners are **Azure Disk**, **AWS EBS**, and **Glusterfs**.
+
 ![Storage class](/img/volumes/storage-class.png)
 
 ```yaml
@@ -84,11 +74,12 @@ mountOptions:
 volumeBindingMode: Immediate # or WaitForFirstConsumer
 ```
 
-Volume modes
+#### Volume modes
+
 It is indicate the type of consumption of the volume – this can either be a
 
-- ***filesystem*** or a (When volumeMode is set to Filesystem, it mounts into the pods as a directory)
-- ***block device*** (When volumeMode is set to Block, we use it as a raw block)
+- **filesystem** or a (When volumeMode is set to Filesystem, it mounts into the pods as a directory)
+- **block device** (When volumeMode is set to Block, we use it as a raw block)
 
 Access modes
 When a PV is mounted to a pod, we can specify different access modes. The access modes represent the way that the data in the storage resources is being consumed. They can be summarized as shown in the following table:
@@ -99,3 +90,15 @@ When a PV is mounted to a pod, we can specify different access modes. The access
 |   2   | ReadOnlyMany     |     ROX     |
 |   3   | ReadWriteMany    |     RWX     |
 |   4   | ReadWriteOncePod |    RWOP     |
+
+#### Container Storage Interface (CSI)
+
+It is a specification that defines a standard for exposing ***block*** and ***file storage systems*** to containerized workloads on Container Orchestration Systems (COS) like Kubernetes. Its offers several benefits and addresses various challenges related to storage management in containerized environments.
+
+> Features
+
+- Integrate different storage system with K8s
+- Supports to multiple storage options
+- Dynamic storage provisioning
+- Snapshotting & cloning
+- Seamless migration

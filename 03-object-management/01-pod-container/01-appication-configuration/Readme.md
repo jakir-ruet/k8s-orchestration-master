@@ -1,4 +1,4 @@
-Step of application configuration
+#### Step of application configuration
 
 - Create ConfigMap Object
 - Describe ConfigMap
@@ -24,7 +24,7 @@ kubectl describe configmap mmy-first-secret
 kubectl delete configmap configmapName
 ```
 
-User Env Variable connecting ConfigMap to Secret. By creating as belows yaml files configure
+#### User Env Variable connecting ConfigMap to Secret. By creating as belows yaml files configure
 
 ```bash
 kubectl apply -f my-first-configmap-env.yaml

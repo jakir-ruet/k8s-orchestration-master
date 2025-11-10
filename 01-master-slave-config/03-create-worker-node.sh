@@ -1,5 +1,5 @@
-# For this demo ssh into c1-node1
-ssh jakir@c1-node1
+# For this demo ssh into c1-wnode1
+ssh jakir@c1-wnode1
 
 # Disable swap, swapoff then edit your fstab removing any entry for swap partitions
 # You can recover the space with fdisk. You may want to reboot to ensure your config is ok.
@@ -68,22 +68,22 @@ sudo apt-mark hold kubelet kubeadm kubectl containerd
 # sudo apt-get install kubelet kubeadm kubectl
 # sudo apt-mark hold kubelet kubeadm kubectl containerd
 
-# Log out of c1-node1 and back on to c1-cp1
+# Log out of c1-wnode1 and back on to c1-cp1
 exit
 
 # You can also use print-join-command to generate token and print the join command in the proper format
 # COPY THIS INTO YOUR CLIPBOARD
 kubeadm token create --print-join-command
 
-# Back on the worker node c1-node1, using the Control Plane Node (API Server) IP address or name, the token and the cert has, let's join this Node to our cluster.
-ssh aen@c1-node1
+# Back on the worker node c1-wnode1, using the Control Plane Node (API Server) IP address or name, the token and the cert has, let's join this Node to our cluster.
+ssh aen@c1-wnode1
 
 # PASTE_JOIN_COMMAND_HERE be sure to add sudo
 sudo kubeadm join 172.16.94.10:6443 \
   --token szaqtk.ad6yeo8qp09t8s46 \
   --discovery-token-ca-cert-hash sha256:4f5322ce857874b44423c03fa6361c027f996b1e7d73eac16bb3eb8bbb6120da
 
-# Log out of c1-node1 and back on to c1-cp1
+# Log out of c1-wnode1 and back on to c1-cp1
 exit
 
 # Back on Control Plane Node, this will say NotReady until the networking pod is created on the new node.
@@ -97,8 +97,8 @@ kubectl get pods --all-namespaces --watch
 kubectl get nodes
 
 ##################################################################
-# GO BACK TO THE TOP AND DO THE SAME FOR c1-node2 and c1-node3
-# Just SSH into c1-node2 and c1-node3 and run the commands again.
+# GO BACK TO THE TOP AND DO THE SAME FOR c1-wnode2 and c1-wnode3
+# Just SSH into c1-wnode2 and c1-wnode3 and run the commands again.
 ##################################################################
 
 # Confirm all three worker nodes are online
