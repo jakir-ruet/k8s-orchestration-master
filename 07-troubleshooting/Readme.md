@@ -62,3 +62,10 @@ When something breaks, structured diagnosis is key. Common Troubleshooting Steps
 - `kubectl exec` (run commands inside containers)
 - `Lens`, `K9s`, or `Octant` for visual cluster exploration
 - `Stern` or `kubetail` for aggregated log viewing
+
+#### Prerequisites
+
+- Access to the `control plane` node (where etcd runs)
+- `etcdctl` installed
+- Knowledge of etcd’s `API version` (v3 for Kubernetes ≥ 1.13)
+- Access to the `certificate files` used by etcd
