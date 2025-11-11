@@ -1,4 +1,4 @@
-### Networking Model
+### Cluster Networking
 
 Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `external clients` to communicate inside a Kubernetes cluster.
 
@@ -10,21 +10,160 @@ Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `e
 
 #### Networking Models
 
-1. Pod-to-Pod Communication
-   - Pods can communicate across nodes using their IPs.
+1. Container-to-Container Networking in a Pod
+   - Pod network namespace
+     - Each Pod gets its own network namespace.
+     - Containers inside the Pod share the same IP address and network stack.
+   - Communication via localhost
+     - Since all containers share the same network namespace, they can communicate over localhost and the respective port exposed by the target container.
+     - No external routing or bridge is needed inside the Pod.
+   - Isolation from outside
+     - Containers without exposed ports (like your container2) cannot be accessed from outside the Pod, only from within the Pod.
+     - Containers with exposed ports (like container1) can be accessed from other Pods using the Pod IP or via a Service.
+2. Pod-to-Pod Communication
+   - Every Pod gets a unique IP from the node’s Pod CIDR.
+   - This IP allows direct communication between Pods, whether they’re on the same node or different nodes.
    - CNI plugin sets up this connectivity.
    - No NAT involved.
-2. Service-to-Pod Communication
+   - Each Pod has its own network namespace.
+   - Each Pod is connected to the node via a veth pair (`veth0` (Pod1) <-> virtual bridge <-> `veth1` (Pod2))
+   - The bridge handles Layer 2 networking, using `ARP` to forward traffic to the correct Pod IP.
+   - Communication process (Pod1 eth0 → veth0 → virtual bridge → veth1 → Pod2 eth0)
+
+![Container-to-Container & Pod-to-Pod](/img/network/concon-podpod.jpg)
+
+3. Pod-to-Service Communication
    - A Service gets a ClusterIP (e.g., 10.96.0.1).
    - Traffic to this IP is routed to backend Pods.
-   - kube-proxy handles the routing (via iptables/IPVS).
-3. Node-to-Pod Communication
-   - Nodes (e.g., kubelet, monitoring agents) talk to Pods using Pod IPs.
-   - This works because of the flat network model (Pods visible from all nodes).
+   - kube-proxy handles the routing (via iptables/IPVS - `(IP Virtual Server)`).
+
+![Pod-to-Service](/img/network/pod-service.jpg)
+
+> The Problem: Pods Are Dynamic
+
+- Pods can `scale up/down` or be `recreated` due to crashes or node failures.
+- Each Pod may get a `new IP address` after recreation.
+- Directly connecting to Pod IPs is unreliable.
+
+> Kubernetes Service: Responsibilities. A Service solves this problem by providing:
+
+- Static Virtual IP (ClusterIP)
+  - A single stable IP that clients connect to instead of individual Pod IPs.
+- Load Balancing
+  - Distributes traffic to the backend Pods that match the Service’s selector.
+  - Traffic is routed to available Pods, even if some fail or are recreated.
+- Pod IP Tracking
+  - The Service keeps track of which Pods are backing it.
+  - Changes in Pod IPs are transparent to clients; they only interact with the Service IP.
+
 4. External-to-Cluster Communication - Exposed via:
    - NodePort (nodeIP:port)
    - LoadBalancer (via cloud)
    - Ingress (layer 7 routing)
+
+![Internet-to-Service](/img/network/internet-service.jpg)
+
+#### Egress Traffic (Outward Flow)
+
+Egress is when traffic originates from inside the cluster (for example, a Pod) and goes out to the Internet or external services.
+
+> How it works:
+
+- Pods typically don’t have routable IPs on the public internet.
+- When a Pod sends traffic outside the cluster, iptables on the node performs Source Network Address Translation (SNAT).
+- The packet’s source IP is changed from the Pod’s IP to the Node’s IP.
+- To the external world, the request looks like it’s coming from the node, not the Pod.
+- The return traffic comes back to the node, which then routes it back to the original Pod.
+
+> Why it matters:
+
+- This provides security and address translation so that internal Pod IPs remain hidden.
+- You can use Egress gateways (in service meshes like Istio) or NetworkPolicies to control or restrict outbound traffic.
+
+#### Ingress Traffic (Inbound Flow)
+
+Ingress is when traffic originates outside the cluster (for example, from users or clients on the internet) and enters the cluster to reach a Service or Pod. Two main ingress solutions:
+
+##### Service LoadBalancer (Layer 4/TCP–UDP)
+
+- Works at the network layer (L4).
+- You define a Service of type LoadBalancer.
+- Your cloud provider provisions an external load balancer (e.g., AWS ELB, GCP Load Balancer, Azure LB).
+- The load balancer forwards traffic to the NodePorts on cluster nodes.
+- Inside the cluster, kube-proxy then routes the traffic to the right backend Pod.
+
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+spec:
+  type: LoadBalancer
+  selector:
+    app: my-app
+  ports:
+    - port: 80
+      targetPort: 8080
+```
+
+> This exposes your app externally via a cloud load balancer.
+
+##### Ingress Controller (Layer 7 / HTTP–HTTPS)
+
+- Works at the application layer (L7).
+- Provides routing based on HTTP hostnames, paths, or headers.
+- Instead of exposing each Service individually, you define Ingress resources with rules that forward traffic to internal Services.
+- Requires an `Ingress Controller`, such as:
+  - NGINX Ingress Controller
+  - HAProxy
+  - Traefik
+  - Istio Gateway
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+spec:
+  rules:
+  - host: myapp.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app
+            port:
+              number: 80
+```
+
+> This routes external HTTP traffic for `myapp.example.com` to the my-app Service inside the cluster.
+
+#### In-Cluster Load Balancing
+
+Kubernetes uses kube-proxy for implementing Service networking. There are `two` modes:
+
+1. [IPTables](https://kubernetes.io/docs/concepts/services-networking/service/#proxy-mode-iptables) Mode
+   - Kube-proxy watches for Service and Pod changes in the API server.
+   - Installs iptables rules that redirect traffic from Service IP to backend Pods.
+   - Traffic handling occurs in kernel space via Linux Netfilter.
+   - Backend Pods are selected randomly.
+   - Pros: Reliable, low system overhead.
+
+2. [IPVS (IP Virtual Server)](https://kubernetes.io/blog/2018/07/09/ipvs-based-in-cluster-load-balancing-deep-dive/) Mode
+   - IPVS (IP Virtual Server) uses Netfilter hooks at the transport layer.
+   - Uses a hash table for fast routing in kernel space.
+   - Provides lower latency, higher throughput, and better performance than iptables.
+   - Ideal for large-scale clusters.
+
+#### Traffic Flow (Pod → Service → Pod)
+
+- Client Pod sends traffic to the Service IP.
+- Traffic goes through the virtual bridge in the node’s network.
+- Since ARP on the bridge doesn’t understand the Service, the packet is routed via the default gateway (eth0).
+- kube-proxy rules (iptables or IPVS) redirect traffic to one of the backend Pods.
+- Traffic can cross nodes if necessary.
 
 #### What Enables Kubernetes Cluster Networking — Combined View
 
@@ -39,36 +178,37 @@ Cluster Networking is the system that allows `Pods`, `Nodes`, `Services`, and `e
 | Traffic Routing      | kube-proxy + iptables              | Handles traffic rules for services and endpoints                  |
 | Traffic Restriction  | NetworkPolicy + CNI                | Controls which Pods can talk to each other (requires CNI support) |
 
-##### Type of services
+#### Container Network Interface (CNI)
 
-- ClusterIP
-  A default service type for Kubernetes. For internal communications, exposing the service makes it reachable within the cluster.
+The CNI is a standard defined by the Container Networking Interface specification
+ that Kubernetes uses to manage networking between pods. It ensures every pod gets its own IP and can communicate with other pods (pod-to-pod communication).
 
-- NodePort
-  For both internal and external communication. `NodePort exposes` the service on a static port on each worker node – meanwhile, a ClusterIP is created for it, and it is used for internal communication, requesting the IP address of the node with an open port – for example, `nodeIP:port` for external communication.
+##### Plugins
 
-- LoadBalancer
-  This works for cloud providers, as it’s backed by their respective load balancer offerings. Underneath `LoadBalancer`, `ClusterIP` and `NodePort` are created, which are used for internal and external communication.
+Kubernetes itself doesn’t implement networking; instead, it relies on third-party plugins such as:
 
-- ExternalName
-  Maps the service to the contents with a CNAME record with its value. It allows external traffic access through it.
+- `Calico:` Offers both overlay and non-overlay modes, with network policies for security.
+- `Flannel:` Simple overlay network using VXLAN.
+- `Cilium:` eBPF-based networking with advanced observability and security features.
 
-**Node to Node**
-Within a cluster, each node is registered by the `kubelet` agent to the master node, and each node is assigned a node IP address so they can communicate with each other.
+When a new pod is created, the kubelet calls the configured `CNI` plugin to:
 
-**Container Network Interface plugin**
-We talked about how to use the Calico plugin as the overlay network for our Kubernetes cluster. We can enable the Container Network Interface (CNI) for pod-to-pod communication. The CNI plugins conform to the CNI specification. Once the CNI is set up on the Kubernetes cluster, it will allocate the IP address per pod.
+- Create a network interface for the pod.
+- Assign an IP address to the pod.
+- Set up routing rules so the pod can reach other pods and services.
 
-**Ingress controllers and Ingress resources**
-One of the challenges of Kubernetes networking is about managing internal traffic, which is also known as east-west traffic, and external traffic, which is known as north-south traffic. There are a few different ways of getting external traffic into a Kubernetes cluster. When it comes to Layer 7 networking, Ingress exposes HTTP and HTTPS at Layer 7 routes from outside the cluster to the services within the cluster.
+#### CoreDNS in Kubernetes
 
-**How Ingress and an Ingress controller works**
-Ingress acts as a router to route traffic to services via an Ingress-managed load balancer – then, the service distributes the traffic to different pods. From that point of view, the same IP address can be used to expose multiple services. However, our application can become more complex, especially when we need to redirect the traffic to its subdomain or even a wild domain. Ingress is here to address these challenges. Ingress works with an Ingress controller to evaluate the defined traffic rules and then determine how the traffic is being routed. The process works as shown in below;
-![Ingress work procedure](/img/network/ingress.png)
+CoreDNS is the default DNS server in modern Kubernetes clusters, replacing the older kube-dns.
 
-**Configuring and leveraging CoreDNS**
-As mentioned earlier in this chapter, nodes, pods, and services are assigned their own IP addresses in the Kubernetes cluster. Kubernetes runs a Domain Name System (DNS) server implementation that maps the name of the service to its IP address via DNS records. So, you can reach out to the services with a consistent DNS name instead of using its IP address. This comes in very handy in the context of microservices. All microservices running in the current Kubernetes cluster can reference the service name to communicate with each other. The DNS server mainly supports the following three types of DNS records, which are also the most common ones:
+- It provides service discovery — letting pods find and communicate with each other by service names rather than IPs.
+- A Service named `backend` in namespace dev can be reached at `backend.dev.svc.cluster.local`.
+- CoreDNS automatically updates DNS records as services or pods are created or destroyed.
 
-- A or AAAA records for forward lookups that map a DNS name to an IP address. A record maps a DNS name to an IPv4 address, whereas an AAAA record allows mapping a DNS name to an IPv6 address.
-- SRV records for port lookups so that connections are established between a service and a hostname.
-- PTR records for reversing IP address lookups, which is the opposite function of A and AAAA records. It matches IP addresses to a DNS name. For example, a PTR record for an IP address of `172.0. 0.10` would be stored under the `10.0. 0.172.in-addr.arpa` DNS zone.
+Key Record Types:
+
+| Record Type  | Description                                                                |
+| ------------ | -------------------------------------------------------------------------- |
+| **A / AAAA** | Map DNS name → IPv4/IPv6 address.                                          |
+| **SRV**      | Map a service name to its hostname and port. Useful for service discovery. |
+| **PTR**      | Reverse lookup: map IP address → DNS name.                                 |
