@@ -4,7 +4,7 @@ Kubernetes security involves multiple layers, from the cluster infrastructure to
 
 ![K8s Security Layer](/img/security/security-layer.png)
 
-#### Authentication Verify the identity of users or components accessing the cluster
+#### Authentication - Verify the identity of users or components accessing the cluster
 
 - X.509 client certificates
 - Static token files

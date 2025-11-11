@@ -13,8 +13,8 @@ sudo kubeadm upgrade node
 
 # Next, on the control plane node, drain any workload on the Worker Node
 exit
-kubectl drain c1-node1 --ignore-daemonsets
-ssh aen@c1-node1
+kubectl drain c1-wnode1 --ignore-daemonsets
+ssh jakir@c1-wnode1
 
 # Since we logged out and back in we need to set that variable again
 TARGET_VERSION='1.32.1-1.1'
@@ -33,7 +33,7 @@ sudo systemctl status kubelet
 exit
 
 # Uncordon the node to allow workload again
-kubectl uncordon c1-node1
+kubectl uncordon c1-wnode1
 
 # Get the nodes to show the version...can take a second to update
 kubectl get nodes

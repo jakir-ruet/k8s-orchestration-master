@@ -106,7 +106,7 @@ kubectl get nodes
 
 # Deploy a simple web application, this container stored in a container repository maintained for this course.
 kubectl create deployment hello-world \
-  --image=psk8s.azurecr.io/hello-app:1.0 \
+  --image=nginx:latest \
   --replicas=3
 
 # Check to see if each node is running a pod

@@ -1,4 +1,4 @@
-ssh aen@c1-cp1
+ssh jakir@c1-cp1
 
 # 1 - Find the version you want to upgrade to.
 # You can only upgrade one minor version to the next minor version
