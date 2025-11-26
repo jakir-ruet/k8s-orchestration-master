@@ -1,0 +1,9 @@
+# pod-b.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-b
+spec:
+  containers:
+  - name: cont
+    image: nginx

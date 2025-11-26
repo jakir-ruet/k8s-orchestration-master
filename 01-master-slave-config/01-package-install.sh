@@ -40,7 +40,7 @@ sudo containerd config default | sudo tee /etc/containerd/config.toml
             SystemdCgroup = true
 
 # You can use sed to swap in true
-sudo sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 
 # Verify the change was made
 grep 'SystemdCgroup = true' /etc/containerd/config.toml

@@ -4,8 +4,9 @@
 kubectl apply -f 01-mysql-secrets.yaml
 kubectl apply -f 02-mysql-pv.yaml
 kubectl apply -f 03-mysql-pvc.yaml
-kubectl apply -f 04-mysql-deployment.yaml
-kubectl apply -f 05-mysql-service.yaml
+kubectl apply -f 04-storage-class.yaml
+kubectl apply -f 05-mysql-deployment.yaml
+kubectl apply -f 06-mysql-service.yaml
 ```
 
 ### Forwarding to localhost the port
@@ -37,7 +38,11 @@ FLUSH PRIVILEGES;
 mysql -h 127.0.0.1 -P 30306 -u jasim -p
 ```
 
-### Create a table
+### Create a database and a table
+
+```sql
+CREATE DATABASE dbstudents;
+```
 
 ```sql
 CREATE TABLE students (
@@ -70,4 +75,4 @@ USE DatabaseName;
 SHOW TABLES;
 ```
 
-> NB: No longer exists the MySQL database
+> NB: Exists the MySQL database

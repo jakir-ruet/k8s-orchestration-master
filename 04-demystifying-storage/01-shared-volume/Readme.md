@@ -35,7 +35,11 @@ FLUSH PRIVILEGES;
 mysql -h 127.0.0.1 -P 30306 -u jasim -p
 ```
 
-### Create a table
+### Create a database and a table
+
+```sql
+CREATE DATABASE dbstudents;
+```
 
 ```sql
 CREATE TABLE students (
