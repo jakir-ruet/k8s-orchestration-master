@@ -84,13 +84,13 @@ http://<external-ip>:80 # It will show an External IP
 
 ### All ways you can access the app
 
-| Method           | Inside Cluster | Outside Cluster | Notes                  |
-| ---------------- | -------------- | --------------- | ---------------------- |
-| Service DNS      | ✅              | ❌               | Easiest inside cluster |
-| ClusterIP        | ✅              | ❌               | Internal IP only       |
-| Pod IP           | ✅              | ❌               | Debug only             |
-| NodePort         | ❌              | ✅               | `NodeIP:30080`         |
-| Port-forward     | ❌              | ✅               | `localhost:8080`       |
-| Minikube service | ❌              | ✅               | Auto browser open      |
-| LoadBalancer     | ❌              | ✅               | Cloud only             |
-| Ingress          | ❌              | ✅               | Domain-based access    |
+| Method               | Inside Cluster | Outside Cluster | Example Command                                                         | Notes                       |
+| -------------------- | -------------- | --------------- | ----------------------------------------------------------------------- | --------------------------- |
+| **Service DNS**      | ✅              | ❌               | `curl http://myapp-service:80`                                          | Easiest inside cluster      |
+| **ClusterIP**        | ✅              | ❌               | `curl http://10.96.123.45:80`                                           | Internal IP only            |
+| **Pod IP**           | ✅              | ❌               | `curl http://10.244.2.2:80`                                             | Debug only (Pod IP changes) |
+| **NodePort**         | ❌              | ✅               | `curl http://192.168.49.2:30080`                                        | `NodeIP:NodePort`           |
+| **Port-forward**     | ❌              | ✅               | `kubectl port-forward svc/myapp 8080:80` → `curl http://localhost:8080` | Best for local testing      |
+| **Minikube service** | ❌              | ✅               | `minikube service myapp-nodeport`                                       | Auto browser open           |
+| **LoadBalancer**     | ❌              | ✅               | `curl http://<external-ip>:80`                                          | Cloud or `minikube tunnel`  |
+| **Ingress**          | ❌              | ✅               | `curl http://myapp.local/`                                              | Domain-based access         |
