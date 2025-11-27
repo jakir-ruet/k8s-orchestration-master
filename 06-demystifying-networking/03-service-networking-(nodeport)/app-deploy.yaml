@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: myapp
+  name: nodeport-deployment
 spec:
   replicas: 2
   selector:
@@ -16,3 +16,4 @@ spec:
       containers:
       - name: myapp
         image: nginx
+
