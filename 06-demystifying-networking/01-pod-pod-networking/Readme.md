@@ -15,6 +15,9 @@ kubectl get pods -o wide
 
 ```bash
 kubectl exec -it pod-a -- sh # inside pod-a container:
-apt update && apt install -y curl
+apt update
+apt install -y curl
+apt install -y iputils-ping
+ping google.com
 curl http://<pod-b-ip>
 ```
