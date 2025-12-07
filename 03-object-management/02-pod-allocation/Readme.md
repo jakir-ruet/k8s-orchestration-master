@@ -99,6 +99,7 @@ A Static Pod is managed directly by the kubelet on a specific node, not the API 
 
 CronJob is used to run jobs on a schedule. A CronJob creates Jobs on a repeating schedule. Cron Syntax Explanation:
 
+```bash
 * * * * *
 │ │ │ │ │
 │ │ │ │ └─ Day of week (0-6 or sun-sat)
@@ -106,6 +107,7 @@ CronJob is used to run jobs on a schedule. A CronJob creates Jobs on a repeating
 │ │ └─── Day of month (1-31)
 │ └──── Hour (0-23)
 └───── Minute (0-59)
+```
 
 ```yaml
 apiVersion: batch/v1
