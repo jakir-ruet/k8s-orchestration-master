@@ -1092,13 +1092,176 @@ In Kubernetes are checks performed by the kubelet to monitor the health and stat
 
 ### [Security](https://kubernetes.io/docs/concepts/security/)
 
+Securing a Kubernetes cluster is less about a single feature and more about layering controls across identity, network, workloads, and the control plane. Think of it as building “defense in depth” around the orchestration system of Kubernetes.
+
+#### 1. Secure the Control Plane (most critical layer)
+
+**Key actions:**
+
+1. Enable API server authentication + authorization
+   - Use strong certs
+   - Avoid anonymous access
+2. Enforce RBAC only (disable legacy ABAC if enabled)
+3. Restrict access to API server endpoint:
+   - Private cluster endpoint (VPC/internal only)
+   - IP allowlisting for kubectl access
+4. Enable audit logs:
+   - Capture all API calls
+   - Send logs to centralized system (ELK/CloudWatch/Loki)
+
+#### 2. RBAC (Role-Based Access Control)
+
+**Best practices:**
+
+- Follow least privilege principle
+- Avoid cluster-admin unless absolutely required
+- Use namespace-scoped roles instead of cluster-wide roles
+
+```bash
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: dev
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+```
+
+```bash
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+subjects:
+- kind: User
+  name: dev-user
+roleRef:
+  kind: Role
+  name: pod-reader
+```
+
+#### 3. Network Security (Zero Trust inside cluster)
+
+```bash
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+```
+
+> By default, all pods can talk to all pods → unsafe. So, need explicitly allow traffic.
+> Service mesh (Istio / Linkerd) for mTLS
+> Separate namespaces per environment (dev/test/prod)
+
+#### 4. Pod Security Standards
+
+**Use:**
+
+- Restricted (production)
+- Baseline (general workloads)
+- Privileged (avoid unless necessary)
+
+```bash
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+```
+
+#### Container Security
+
+**Image best practices:**
+
+- Use minimal base images (alpine/distroless)
+- Scan images (Trivy / Grype)
+- Sign images (cosign / Notary v2)
+
+**Avoid:**
+
+- Latest tag
+- Running as root inside container
+
+```bash
+securityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+```
+
+#### 6. Secrets Management
+
+**Better options:**
+
+1. Kubernetes Secrets (base64 only → weak alone)
+2. External systems:
+   - HashiCorp Vault
+   - AWS Secrets Manager
+   - Azure Key Vault
+
+```bash
+encryptionConfiguration:
+  resources:
+    - resources:
+        - secrets
+      providers:
+        - aesgcm:
+            keys:
+              - name: key1
+                secret: <base64-key>
+```
+
+#### 7. Node Security
+
+1. Harden OS (CIS benchmark)
+2. Disable SSH where possible
+3. Regular patching
+4. Restrict kubelet API access
+5. Use separate node pools:
+   - System nodes
+   - Application nodes
+
+#### 8. Logging & Monitoring
+
+You must detect before you react.
+
+- Audit logs (API server)
+- Runtime monitoring:  Falco (detect suspicious behavior)
+- Metrics: Prometheus + Grafana
+
+- Alert on:
+  - Privilege escalation
+  - Unexpected exec into pods
+  - Unusual API spikes
+
 ### [Policies](https://kubernetes.io/docs/concepts/policy/)
+
+| Policy Type       | Controls                                          | Mental Model                          | Scope                                    | What it Prevents                                                                   | Real-World Analogy                               |
+| ----------------- | ------------------------------------------------- | ------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------ |
+| **NetworkPolicy** | Pod-to-pod traffic, ingress/egress communication  | “Who can talk to whom”                | Network layer inside namespace / cluster | Unauthorized service access, lateral movement, open communication between all pods | Internal firewall between services in a building |
+| **LimitRange**    | CPU, memory per container/pod (min, max, default) | “How much each container can consume” | Per container / per pod                  | Missing resource limits, overconsumption by a single pod, scheduling instability   | Safety limiter on each machine/equipment         |
+| **ResourceQuota** | Total CPU, memory, pod count per namespace        | “Total budget of the namespace”       | Namespace-wide aggregate                 | Resource exhaustion, one team consuming all cluster capacity                       | Department budget limit in an organization       |
 
 ### [Scheduling, Preemption and Eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/)
 
-### [Cluster Administration](https://kubernetes.io/docs/concepts/cluster-administration/)
+| Concept        | When it happens                                   | Who triggers it      | Purpose                                        | Result                             |
+| -------------- | ------------------------------------------------- | -------------------- | ---------------------------------------------- | ---------------------------------- |
+| **Scheduling** | When a pod is created                             | Kubernetes Scheduler | Find a suitable node for pod placement         | Pod assigned to a node             |
+| **Preemption** | When high-priority pod cannot be scheduled        | Scheduler            | Free resources by removing lower-priority pods | Some pods are deleted to make room |
+| **Eviction**   | When node is unhealthy or under resource pressure | Kubelet (node agent) | Protect node stability                         | Pods are removed from node         |
 
-### [Extending Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/)
+> Think of a cluster as:
+>
+> - Nodes = seats
+> - Pods = passengers
+> - Scheduler = seating manager
+> - Preemption = kicking lower priority passengers
+> - Eviction = forced removal due to problems
 
 #### Kubernetes Component Version Compatibility
 
