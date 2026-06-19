@@ -1174,7 +1174,7 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
 ```
 
-#### Container Security
+#### 5. Container Security
 
 **Image best practices:**
 
