@@ -1333,6 +1333,87 @@ Minikube is a lightweight tool that lets you run a `real Kubernetes cluster` loc
 
 ##### Install & Configuration
 
+###### Colima, Docker, Minikube & Kubernetes Cluster Install - Macbook or Linux
+
+```bash
+                 MacBook Pro M1
+                    macOS
+                      │
+                   Colima
+                 6 CPU / 7 GB
+                      │
+                   Docker
+                      │
+                ┌───────────┐
+                │ Minikube  │
+                │ Kubernetes│
+                │ v1.37.0   │
+                └─────┬─────┘
+                      │
+          ┌───────────┼───────────┐
+          │           │           │
+          ▼           ▼           ▼
+      minikube    minikube-m02  minikube-m03
+      CONTROL      WORKER-1      WORKER-2
+       PLANE
+       Ready        Ready         Ready
+```
+
+| Node           | Role          | Status  | Kubernetes | Runtime          |
+| -------------- | ------------- | ------- | ---------- | ---------------- |
+| `minikube`     | Control Plane | ✅ Ready | v1.37.0    | containerd 2.3.4 |
+| `minikube-m02` | Worker        | ✅ Ready | v1.37.0    | containerd 2.3.4 |
+| `minikube-m03` | Worker        | ✅ Ready | v1.37.0    | containerd 2.3.4 |
+
+```bash
+uname -m
+system_profiler SPHardwareDataType | grep -E "Chip|Memory"
+sw_vers
+```
+
+```bash
+brew --version
+brew --prefix
+```
+
+```bash
+brew install colima
+brew install docker
+brew install kubectl
+brew install minikube
+```
+
+```bash
+colima version
+docker --version
+kubectl version --client
+minikube version
+```
+
+```bash
+colima start \
+  --runtime docker \
+  --cpu 6 \
+  --memory 7 \
+  --disk 60
+```
+
+```bash
+colima status
+docker info
+```
+
+```bash
+minikube start \
+  --driver=docker \
+  --nodes=3 \
+  --cpus=2 \
+  --memory=1800mb \
+  --disk-size=15g
+```
+
+###### Minikube Install
+
 ```bash
 minikube start # for single node
 minikube start --nodes 3 --driver=docker # or
@@ -1352,7 +1433,7 @@ minikube start --force --driver=docker
 minikube dashboard
 ```
 
-#### [KIND](https://kind.sigs.k8s.io/)
+###### [KIND](https://kind.sigs.k8s.io/)
 
 It's a tool for running local Kubernetes clusters using Docker container “nodes”. kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
