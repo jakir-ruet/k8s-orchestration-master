@@ -1,4 +1,4 @@
-## More About Me – [Take a Look!](http://www.mjakaria.me)
+## More About Me – [Take a Look!](https://www.linkedin.com/in/jakir-ruet)
 
 ## Kubernetes
 
@@ -19,47 +19,46 @@ Kubernetes is a portable, extensible, open source platform for managing containe
 | IPv4/IPv6 dual-stack               | - Supports allocation of both IPv4 and IPv6 addresses to Pods and Services                                     |
 | Designed for extensibility         | - Easily add features without changing Kubernetes core                                                         |
 
-### [Components](https://kubernetes.io/docs/concepts/overview/components/)
+### [Types of components](https://kubernetes.io/docs/concepts/overview/components/)
 
-A Kubernetes cluster consists of a `control plane` and `one/more worker nodes`. Here's a brief overview of the main components:
+| Category          | Component                                 | Function                                                 |
+| ----------------- | ----------------------------------------- | -------------------------------------------------------- |
+| **Control Plane** | **kube-apiserver**                        | Exposes the Kubernetes API and handles cluster requests. |
+|                   | **etcd**                                  | Stores Kubernetes cluster state and configuration.       |
+|                   | **kube-scheduler**                        | Assigns unscheduled Pods to suitable nodes.              |
+|                   | **kube-controller-manager**               | Runs controllers to maintain the desired cluster state.  |
+| ↳ Controller      | Node Controller                           | Monitors node health and availability.                   |
+| ↳ Controller      | Replication Controller                    | Maintains the required number of Pod replicas.           |
+| ↳ Controller      | Endpoint Controller                       | Maintains Service endpoint information.                  |
+| ↳ Controller      | ServiceAccount Controller                 | Manages ServiceAccount resources.                        |
+|                   | **cloud-controller-manager** *(Optional)* | Integrates Kubernetes with cloud-provider APIs.          |
+| ↳ Controller      | Node Controller                           | Manages cloud-specific node information.                 |
+| ↳ Controller      | Route Controller                          | Manages cloud network routes.                            |
+| ↳ Controller      | Service Controller                        | Manages cloud load balancers for Services.               |
+| **Worker Node**   | **kubelet**                               | Ensures assigned Pods and containers are running.        |
+|                   | **kube-proxy** *(Optional)*               | Implements Service networking and traffic routing.       |
+|                   | **Container Runtime**                     | Runs and manages containers.                             |
+| **Add-ons**       | **DNS**                                   | Provides service discovery and DNS resolution.           |
+|                   | **Web UI / Dashboard**                    | Provides a graphical interface for cluster management.   |
+|                   | **Resource Monitoring**                   | Collects CPU, memory, and resource metrics.              |
+|                   | **Cluster-level Logging**                 | Collects and aggregates cluster and application logs.    |
 
-#### [Types of components](https://kubernetes.io/docs/concepts/overview/components/)
+### [Objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
 
-- Control Plane Components
-  - [kube-apiserver](https://kubernetes.io/docs/concepts/architecture/#kube-apiserver)
-  - [etcd](https://etcd.io) `It's may a separate project & different version`
-  - [kube-scheduler](https://kubernetes.io/docs/concepts/architecture/#kube-scheduler)
-  - [kube-controller-manager](https://kubernetes.io/docs/concepts/architecture/#kube-controller-manager)
-    - node-controller
-    - replication-controller
-    - endpoint-controller
-    - service-account-controller
-  - cloud-controller-manager (Optional)
-    - node-controller
-    - route-controller
-    - service-controller
-- Worker Node Components
-  - [kubelet](https://kubernetes.io/docs/concepts/architecture/#kubelet)
-  - [kube-proxy](https://kubernetes.io/docs/concepts/architecture/#kube-proxy) (Optional)
-  - [container runtime](https://kubernetes.io/docs/concepts/architecture/#container-runtime)
-- Kubernetes
-  - [DNS](https://kubernetes.io/docs/concepts/architecture/#dns)
-  - [Web UI (Dashboard)](https://kubernetes.io/docs/concepts/architecture/#web-ui-dashboard)
-  - [Container Resource Monitoring](https://kubernetes.io/docs/concepts/architecture/#container-resource-monitoring)
-  - [Cluster-level Logging](https://kubernetes.io/docs/concepts/architecture/#cluster-level-logging)
+Kubernetes Objects are persistent entities that represent the desired and current state of resources in a cluster. Most Kubernetes objects contain **spec** for the desired state and **status** for the current state.
 
-#### [Objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
+### Required fields in object
 
-Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Learn about the Kubernetes object model and how to work with these objects. Almost every  object includes **two** nested object fields that govern the object's configuration, first `spec` and second `status`.
+| Field        | Purpose                                           |
+| ------------ | ------------------------------------------------- |
+| `apiVersion` | API version of the object                         |
+| `kind`       | Type of Kubernetes object                         |
+| `metadata`   | Object name, namespace, labels, annotations, etc. |
+| `spec`       | Defines the desired state                         |
 
-#### Required fields in object
+> **Note:** status is generally maintained by Kubernetes/controllers and is not normally specified by users when creating an object.
 
-- **apiVersion**
-- **kind**
-- **metadata**
-- **spec**
-
-#### Sample object of `Deployment`
+### Deployment as Object
 
 ```bash
 apiVersion: apps/v1
@@ -67,85 +66,97 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: nginx
-  replicas: 2 # tells deployment to run 2 pods matching the template
   template:
     metadata:
       labels:
         app: nginx
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.14.2
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.14.2
+          ports:
+            - containerPort: 80
 ```
 
-#### Server-side field validation (since Kubernetes v1.25)
+### Server-Side Field Validation - since Kubernetes v1.25
 
-- API server checks for unrecognized or duplicate fields in submitted objects
-- Provides the same validation as kubectl --validate, but on the server side
+The API server validates object fields when requests are submitted.
 
-- kubectl --validate options
-  - strict (or true) → reject invalid fields with an error
-  - warn → allow the request but show warnings for invalid fields
-  - ignore (or false) → no field validation performed
-- Defaults
-  - kubectl --validate=true by default (strict mode)
-- Fallback
-  - If kubectl cannot reach an API server with field validation, it uses local (client-side) validation
-  - Kubernetes 1.27+ always supports server-side field validation
-  - For older clusters, check your Kubernetes version docs
+| Option             | Function                                |
+| ------------------ | --------------------------------------- |
+| `strict` / `true`  | Reject unknown or duplicate fields      |
+| `warn`             | Accept the request but display warnings |
+| `ignore` / `false` | Skip field validation                   |
 
-#### Common Types of Objects
+```bash
+kubectl apply -f deployment.yaml --validate=strict
+```
 
-| **Object**                       | **Description**                                                                  |
-| -------------------------------- | -------------------------------------------------------------------------------- |
-| Pod                              | The smallest deployable unit; holds one or more containers                       |
-| ReplicaSet                       | Ensures a specified number of identical Pods are running                         |
-| Deployment                       | Manages ReplicaSets; supports easy updates/rollbacks of Pods                     |
-| StatefulSet                      | Manages Pods with unique, stable identities (for stateful apps)                  |
-| DaemonSet                        | Runs a copy of a Pod on every (or selected) node                                 |
-| Job                              | Runs a one-time task until completion                                            |
-| CronJob                          | Runs Jobs on a time-based schedule                                               |
-| Service                          | Provides a stable network endpoint and load-balances traffic to Pods             |
-| ConfigMap                        | Stores non-sensitive configuration data                                          |
-| Secret                           | Stores sensitive data (passwords, tokens, certificates)                          |
-| PersistentVolume (PV)            | Describes a piece of storage in the cluster                                      |
-| PersistentVolumeClaim (PVC)      | Requests storage resources from a PV                                             |
-| Namespace                        | Provides logical isolation for groups of resources                               |
-| Ingress                          | Manages external HTTP/HTTPS access to Services                                   |
-| Egress                           | Controls outbound network traffic (often paired with NetworkPolicy)              |
-| NetworkPolicy                    | Controls network traffic rules between Pods                                      |
-| ResourceQuota                    | Limits resource consumption in a namespace                                       |
-| LimitRange                       | Sets default and maximum limits for resources in a namespace                     |
-| HorizontalPodAutoscaler          | Automatically scales Pods based on metrics like CPU usage                        |
-| PodDisruptionBudget              | Specifies how many Pods can be down during maintenance                           |
-| Role / ClusterRole               | Define permissions within a namespace (Role) or across the cluster (ClusterRole) |
-| RoleBinding / ClusterRoleBinding | Attach roles to users, groups, or service accounts                               |
-| ServiceAccount                   | Provides an identity for Pods to interact with the Kubernetes API                |
-| EndpointSlice                    | Stores network endpoint addresses of Services (more scalable than Endpoints)     |
-| CustomResourceDefinition         | Lets you define your own API objects to extend Kubernetes                        |
+### Common Kubernetes Objects
 
-#### [Object Management](https://kubernetes.io/docs/concepts/overview/working-with-objects/object-management/)
+| Object                               | Function                                        |
+| ------------------------------------ | ----------------------------------------------- |
+| **Pod**                              | Runs one or more containers                     |
+| **ReplicaSet**                       | Maintains the desired number of Pods            |
+| **Deployment**                       | Manages ReplicaSets and application updates     |
+| **StatefulSet**                      | Manages stateful Pods with stable identities    |
+| **DaemonSet**                        | Runs a Pod on every or selected nodes           |
+| **Job**                              | Runs a task to completion                       |
+| **CronJob**                          | Creates Jobs on a schedule                      |
+| **Service**                          | Provides a stable network endpoint for Pods     |
+| **ConfigMap**                        | Stores non-sensitive configuration              |
+| **Secret**                           | Stores sensitive configuration data             |
+| **PersistentVolume (PV)**            | Represents cluster storage                      |
+| **PersistentVolumeClaim (PVC)**      | Requests storage                                |
+| **Namespace**                        | Provides logical resource isolation             |
+| **Ingress**                          | Routes external HTTP/HTTPS traffic to Services  |
+| **NetworkPolicy**                    | Controls Pod network traffic                    |
+| **ResourceQuota**                    | Limits resource usage within a namespace        |
+| **LimitRange**                       | Defines resource defaults and limits            |
+| **HorizontalPodAutoscaler**          | Automatically scales workloads based on metrics |
+| **PodDisruptionBudget**              | Limits voluntary Pod disruptions                |
+| **Role / ClusterRole**               | Defines RBAC permissions                        |
+| **RoleBinding / ClusterRoleBinding** | Assigns RBAC roles to identities                |
+| **ServiceAccount**                   | Provides an identity for Pods                   |
+| **EndpointSlice**                    | Tracks network endpoints for Services           |
+| **CustomResourceDefinition (CRD)**   | Extends the Kubernetes API with custom objects  |
 
-- Imperative Commands
-- Declarative
+### [Object Management](https://kubernetes.io/docs/concepts/overview/working-with-objects/object-management/) - Kubernetes objects can be managed primarily using
+
+| Approach        | Description                                                  |
+| --------------- | ------------------------------------------------------------ |
+| **Imperative**  | Specify the operation directly using `kubectl` commands      |
+| **Declarative** | Define the desired state in YAML and apply it to the cluster |
+
+```bash
+# Imperative
+kubectl create deployment nginx --image=nginx
+```
+
+```bash
+# Declarative
+kubectl apply -f deployment.yaml
+```
 
 ### [Cluster](https://kubernetes.io/docs/concepts/architecture/)
 
 It is made up of at least one master node and one or more worker nodes. The **master node makes up the control plane** of a cluster and is responsible for scheduling tasks and monitoring the state of the cluster.
+
 ![Cluster](/img/cluster.png)
-CRI > Container Runtime Interface & CNI > Container Network Interface
 
-#### [Nodes](https://kubernetes.io/docs/concepts/architecture/nodes/)
+> - CRI: Container Runtime Interface
+> - CNI: Container Network Interface
 
-Kubernetes runs your workload by placing `containers into Pods to run on Nodes`. A node may be a virtual or physical machine, depending on the cluster. Each node is managed by the control plane and contains the services necessary to run Pods.There are **two** main ways to have Nodes added to the API server:
+### [Nodes](https://kubernetes.io/docs/concepts/architecture/nodes/)
 
-- The kubelet on a node self-registers to the control plane
-- You (or another human user) manually add a Node object
+Kubernetes runs workloads by placing containers inside **Pods**, which run on **Nodes**. A Node can be a **physical or virtual machine**, depending on the cluster. Each Node is managed by the control plane and contains the components required to run Pods.
+
+- The **kubelet** on the Node automatically registers the Node with the control plane.
+- A user or administrator manually creates a **Node object** in the API server.
 
 ```json
 {
@@ -160,76 +171,1299 @@ Kubernetes runs your workload by placing `containers into Pods to run on Nodes`.
 }
 ```
 
-##### Node Controller
+### Node and Control Plane Communication
 
-- Part of the Kubernetes control plane
-- Manages the lifecycle and health of nodes
+Kubernetes uses the **kube-apiserver** as the central communication point between the control plane, Nodes, and Kubernetes clients. A simplified communication model is:
 
-**Main Roles:**
+```text
+                         ┌──────────────────────────┐
+                         │       Kubernetes         │
+                         │       Control Plane      │
+                         │                          │
+                         │  kube-apiserver          │
+                         │  kube-scheduler          │
+                         │  controller-manager      │
+                         │  etcd                    │
+                         └────────────┬─────────────┘
+                                      │
+                              Kubernetes API
+                                      │
+                 ┌────────────────────┼────────────────────┐
+                 │                    │                    │
+                 ▼                    ▼                    ▼
+              Worker 1             Worker 2             Worker 3
+                 │                    │                    │
+              kubelet              kubelet              kubelet
+                 │                    │                    │
+            Container Runtime   Container Runtime   Container Runtime
+                 │                    │                    │
+              Containers           Containers           Containers
+                 │
+                 ├── CNI
+                 └── CSI
+```
 
-- Assigns a `CIDR` block to a node when it registers (if enabled)
-- Syncs nodes with the cloud provider’s VM list and removes missing VMs
-- Monitors node health:
-  - Updates the `Ready` condition to `Unknown` if a node is unreachable
-  - Evicts Pods on unreachable nodes after a `5-minute` default timeout
-  - Checks node status every 5 seconds (can be changed with `--node-monitor-period`)
+The **kube-apiserver** is therefore the primary communication hub for Kubernetes API operations.
 
-#### Communication between `Node` & `Control Plane`
+---
 
-##### [Node to Control Plane Communication](https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/)
+### 1. Main Communication Paths
 
-- Where all node (and Pod) API calls go to the API server
-- The API server listens on secure HTTPS (Port 443) with client `authentication` and `authorization`
-- Nodes should have:
-  - The cluster's root certificate
-  - Valid client credentials (commonly client certificates, e.g., via kubelet TLS bootstrapping)
-- Pods connect to the API server using a **service account** (Kubernetes injects certificates + bearer tokens automatically)
-- The Kubernetes service (in `default` namespace) points to the API server via `kube-proxy`
-- Control plane components also talk to the API server on the secure port
-- Overall, node-to-control-plane traffic is secured and can run over public networks if needed
+There are several important communication paths in a Kubernetes cluster:
 
-##### [Control Plane to Node Communication](https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/)
+```text
+1. kubectl / Client
+       ↓
+   kube-apiserver
 
-There are `two` primary communication paths from the control plane (the API server) to the nodes.
+2. kubelet
+       ↓
+   kube-apiserver
 
-- The first is from the API server to the kubelet process which runs on each node in the cluster.
-- The second is from the API server to any node, pod, or service through the API server's proxy functionality.
+3. kube-apiserver
+       ↓
+   kubelet
 
-**API server to Kubelet** The connections `from the API server to the kubelet` are used for:
+4. Control Plane Components
+       ↓
+   kube-apiserver
 
-- Fetching logs for pods.
-- Attaching (usually through kubectl) to running pods.
-- Providing the kubelet's port-forwarding functionality.
+5. kube-apiserver
+       ↓
+   etcd
 
-These connections go to the kubelet’s HTTPS endpoint. By default, the API server does not verify the kubelet’s `certificate`, which can allow man-in-the-middle attacks on untrusted networks.
+6. Pod
+       ↓
+   kube-apiserver
+       (only when required by the application)
 
-To secure it, use the `--kubelet-certificate-authority` flag so the API server can validate the kubelet’s certificate with a trusted root CA.
+7. Pod
+       ↔
+   Pod
 
-##### API server to nodes, pods, and services
+8. Pod
+       ↓
+   Service
+       ↓
+   Pod
+```
 
-- By default, the `API server` connects to `nodes`, `Pods`, or `Services` using `plain HTTP`
-- These HTTP connections are not authenticated or encrypted
-- You can use HTTPS by prefixing https: in the API URL
-  - However, the API server does not verify the server’s certificate
-  - No client credentials are provided
-- So even if encrypted, the connection has no integrity guarantees
-- These connections are not safe on untrusted or public networks
+These paths should be understood separately because they have different protocols, authentication mechanisms, and security requirements.
 
-##### SSH Tunnels
+---
 
-- Kubernetes can use SSH tunnels to secure control-plane-to-node communication
-- The API server opens an SSH tunnel to each node (on port 22)
-- All traffic to the kubelet, node, Pod, or Service goes through this tunnel
-- This keeps the traffic hidden from untrusted or external networks
+#### 2. Node → Control Plane Communication
 
-#### [Self-Healing capabilities](https://kubernetes.io/docs/concepts/architecture/self-healing/)
+The primary path is:
 
-- **Container-level restarts** If a container fails, Kubernetes restarts it based on the restartPolicy.
-- **Replica replacement** If a Pod in a Deployment, StatefulSet, or DaemonSet fails, Kubernetes creates a replacement Pod to keep the desired replica count.
-- **Persistent storage recovery** If a node running a Pod with a PersistentVolume fails, Kubernetes can reattach the volume to a new Pod on another node.
-- **Load balancing for Services** If a Pod fails, Kubernetes removes it from the Service endpoints, routing traffic only to healthy Pods.
+```text
+Node
+ │
+ ├── kubelet
+ │
+ └──────── HTTPS ────────► kube-apiserver
+```
 
-##### Couple of key components for Self-Healing
+The **kubelet** communicates with the API server to:
+
+- Register the Node.
+- Report Node status.
+- Report Pod status.
+- Retrieve Pod specifications assigned to the Node.
+- Receive configuration required for Pod management.
+- Perform other Kubernetes API operations required for Node management.
+
+The communication normally uses **HTTPS/TLS**.
+
+---
+
+#### 3. Kubelet Authentication
+
+The kubelet must authenticate to the API server.
+
+A common bootstrap process is:
+
+```text
+New Node
+   │
+   ▼
+kubelet
+   │
+   │ TLS bootstrap / credentials
+   ▼
+kube-apiserver
+   │
+   ▼
+Authentication
+   │
+   ▼
+Authorization
+   │
+   ▼
+Node identity
+```
+
+The kubelet typically operates using a Node identity such as:
+
+```text
+system:node:<node-name>
+```
+
+The exact authentication mechanism depends on the cluster configuration.
+
+Common mechanisms include:
+
+- Client certificates
+- TLS bootstrapping
+- Authentication configuration provided to the kubelet
+
+---
+
+#### 4. Kubelet Authorization
+
+Authentication answers:
+
+> **Who is this client?**
+
+Authorization answers:
+
+> **What is this client allowed to do?**
+
+Kubernetes provides **Node authorization** specifically for kubelets.
+
+The Node authorizer restricts kubelet access to resources associated with the Node and its workloads.
+
+Conceptually:
+
+```text
+kubelet
+   │
+   │ "I am system:node:worker-01"
+   ▼
+Authentication
+   │
+   ▼
+Authorization
+   │
+   ▼
+Node Authorizer
+   │
+   ▼
+Allowed / Denied
+```
+
+This follows the Kubernetes security model of:
+
+**Authenticate → Authorize → Execute**
+
+---
+
+#### 5. Node Registration
+
+A Node can become known to the Kubernetes API server through kubelet registration.
+
+```text
+kubelet
+   │
+   │ register
+   ▼
+kube-apiserver
+   │
+   ▼
+Node object
+```
+
+The Node is represented in Kubernetes as a **Node API object**.
+
+You can inspect Nodes with:
+
+```bash
+kubectl get nodes
+```
+
+Detailed information:
+
+```bash
+kubectl describe node <node-name>
+```
+
+---
+
+#### 6. Node Heartbeats and Leases
+
+Kubernetes needs to determine whether a Node is healthy and reachable.
+
+The kubelet periodically communicates its health information.
+
+Modern Kubernetes also uses **Lease objects** for lightweight Node heartbeats.
+
+```text
+kubelet
+   │
+   │ renew Lease
+   ▼
+kube-apiserver
+   │
+   ▼
+kube-node-lease namespace
+```
+
+Each Node has a corresponding Lease.
+
+You can inspect them with:
+
+```bash
+kubectl get lease -n kube-node-lease
+```
+
+The Node Controller uses Node health information and Lease activity to help determine Node availability.
+
+---
+
+#### 7. Node Status
+
+The kubelet reports information about the Node to the API server.
+
+Important Node conditions include:
+
+| Condition            | Meaning                              |
+| -------------------- | ------------------------------------ |
+| `Ready`              | Node is healthy and able to run Pods |
+| `MemoryPressure`     | Node has insufficient memory         |
+| `DiskPressure`       | Node has insufficient disk space     |
+| `PIDPressure`        | Node has too many processes          |
+| `NetworkUnavailable` | Node networking is unavailable       |
+
+Inspect them with:
+
+```bash
+kubectl describe node <node-name>
+```
+
+---
+
+#### 8. Control Plane → Node Communication
+
+The primary control-plane-to-Node communication path is:
+
+```text
+kube-apiserver
+       │
+       │ HTTPS
+       ▼
+    kubelet
+       │
+       ▼
+Container Runtime
+```
+
+The API server communicates with the kubelet for operations that require direct interaction with the Node.
+
+Examples include:
+
+- Pod logs
+- Container attachment
+- `kubectl exec`
+- `kubectl port-forward`
+
+---
+
+#### 9. API Server → Kubelet
+
+The API server connects to the kubelet's HTTPS endpoint.
+
+For example:
+
+```text
+kubectl
+   │
+   ▼
+kube-apiserver
+   │
+   │ HTTPS
+   ▼
+kubelet
+   │
+   ▼
+container runtime
+   │
+   ▼
+container
+```
+
+#### Pod Logs
+
+When you execute:
+
+```bash
+kubectl logs nginx
+```
+
+the request follows approximately:
+
+```text
+kubectl
+   ↓
+kube-apiserver
+   ↓
+kubelet
+   ↓
+container runtime / container logs
+   ↓
+kubelet
+   ↓
+kube-apiserver
+   ↓
+kubectl
+```
+
+---
+
+#### 10. kubectl exec
+
+For:
+
+```bash
+kubectl exec -it nginx -- /bin/sh
+```
+
+the communication path involves the API server and the kubelet:
+
+```text
+kubectl
+   │
+   ▼
+kube-apiserver
+   │
+   ▼
+kubelet
+   │
+   ▼
+container runtime
+   │
+   ▼
+container
+```
+
+This is different from ordinary Kubernetes API requests because the operation ultimately requires interaction with the running container on the Node.
+
+---
+
+#### 11. kubectl port-forward
+
+For:
+
+```bash
+kubectl port-forward pod/nginx 8080:80
+```
+
+the API server coordinates the request with the kubelet, which provides the connection to the Pod.
+
+Conceptually:
+
+```text
+Local machine
+      │
+      ▼
+  kubectl
+      │
+      ▼
+kube-apiserver
+      │
+      ▼
+   kubelet
+      │
+      ▼
+     Pod
+```
+
+---
+
+#### 12. Kubelet Certificate Verification
+
+The API server communicates with the kubelet over HTTPS.
+
+The kubelet presents a serving certificate.
+
+For stronger security, the API server can be configured to verify the kubelet certificate against a trusted CA.
+
+For example:
+
+```text
+--kubelet-certificate-authority
+```
+
+This establishes a stronger trust relationship:
+
+```text
+kube-apiserver
+      │
+      │ TLS
+      ▼
+Validate kubelet certificate
+      │
+      ▼
+Trusted kubelet
+```
+
+Without proper certificate validation, encrypted communication alone does not necessarily provide protection against endpoint impersonation.
+
+---
+
+#### 13. API Server → Node, Pod, and Service Proxy
+
+The API server also provides proxy functionality for accessing:
+
+- Nodes
+- Pods
+- Services
+
+Conceptually:
+
+```text
+Client
+   │
+   ▼
+kube-apiserver
+   │
+   ├────────► Node
+   │
+   ├────────► Pod
+   │
+   └────────► Service
+```
+
+The security of the connection beyond the API server depends on the configured transport and endpoint.
+
+Using HTTPS is preferable to plaintext HTTP, but **TLS encryption alone is not sufficient** if certificate verification and endpoint authentication are not properly configured.
+
+---
+
+#### 14. Control Plane Components → API Server
+
+Control-plane components generally communicate through the API server.
+
+```text
+                  ┌──────────────────┐
+                  │ kube-apiserver   │
+                  └────────┬─────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+   kube-scheduler   controller-manager   clients
+```
+
+##### kube-scheduler
+
+The scheduler watches for unscheduled Pods through the API server.
+
+```text
+Pod
+ │
+ │ unscheduled
+ ▼
+kube-apiserver
+ │
+ ▼
+kube-scheduler
+ │
+ │ selects Node
+ ▼
+kube-apiserver
+ │
+ ▼
+Pod assigned to Node
+```
+
+---
+
+### 15. Controller Manager → API Server
+
+Controllers continuously compare:
+
+```text
+Desired State
+      vs
+Current State
+```
+
+For example:
+
+```text
+Deployment
+   │
+   │ desired: 3 replicas
+   ▼
+controller
+   │
+   │ current: 2 replicas
+   ▼
+create Pod
+   │
+   ▼
+kube-apiserver
+```
+
+The controller manager therefore relies heavily on the API server as the interface for observing and modifying cluster state.
+
+---
+
+### 16. API Server → etcd
+
+The API server is also the primary Kubernetes component that communicates with **etcd**.
+
+```text
+Kubernetes clients
+       │
+       ▼
+kube-apiserver
+       │
+       │ HTTPS
+       ▼
+      etcd
+```
+
+Kubernetes cluster state is stored in etcd.
+
+Examples include:
+
+- Nodes
+- Pods
+- Deployments
+- Services
+- ConfigMaps
+- Secrets
+- RBAC objects
+- Custom Resources
+
+A simplified request path is:
+
+```text
+kubectl
+   │
+   ▼
+kube-apiserver
+   │
+   ▼
+ authentication
+   │
+   ▼
+ authorization
+   │
+   ▼
+ admission
+   │
+   ▼
+ etcd
+```
+
+The API server is therefore the **gateway to Kubernetes state**, rather than individual components directly modifying etcd.
+
+---
+
+### 17. Pod → API Server Communication
+
+Pods can communicate with the Kubernetes API server when their applications need Kubernetes API access.
+
+Typical path:
+
+```text
+Pod
+ │
+ │ ServiceAccount credentials
+ ▼
+Kubernetes Service
+ │
+ ▼
+kube-apiserver
+```
+
+A Pod can receive ServiceAccount credentials through its projected volume configuration.
+
+Applications can then authenticate to the Kubernetes API using those credentials, subject to RBAC permissions.
+
+Important distinction:
+
+> **Pods do not automatically need to communicate with the API server.**
+
+Only applications that require Kubernetes API functionality need this communication.
+
+---
+
+### 18. Pod → Pod Communication
+
+Pod-to-Pod communication is different from control-plane communication.
+
+Kubernetes networking generally expects:
+
+```text
+Pod A
+  │
+  │ Pod network
+  ▼
+Pod B
+```
+
+Pods normally receive their own IP addresses.
+
+The CNI plugin provides the underlying Pod networking implementation.
+
+For example:
+
+```text
+Pod
+ │
+ ▼
+CNI
+ │
+ ▼
+Node Network
+ │
+ ▼
+Other Node
+ │
+ ▼
+CNI
+ │
+ ▼
+Destination Pod
+```
+
+This traffic does **not normally go through the kube-apiserver**.
+
+---
+
+### 19. Pod → Service Communication
+
+Applications normally access other applications through a **Service**.
+
+```text
+Pod A
+ │
+ │ request
+ ▼
+Service
+ │
+ ▼
+Service routing
+ │
+ ├──► Pod B
+ ├──► Pod C
+ └──► Pod D
+```
+
+The Service provides a stable virtual endpoint while the underlying Pods may be created, destroyed, or replaced.
+
+---
+
+### 20. Service Networking
+
+A simplified model is:
+
+```text
+Client Pod
+    │
+    ▼
+Service IP
+    │
+    ▼
+Service routing
+    │
+    ▼
+EndpointSlice
+    │
+    ▼
+Backend Pod
+```
+
+Service traffic handling may involve:
+
+- `kube-proxy`
+- CNI networking
+- eBPF-based networking in some Kubernetes environments
+
+The exact implementation depends on the cluster's networking solution.
+
+---
+
+### 21. CNI Communication
+
+The **Container Network Interface (CNI)** is responsible for configuring Pod networking.
+
+Conceptually:
+
+```text
+kubelet
+   │
+   │ invokes networking setup
+   ▼
+CNI plugin
+   │
+   ├── Pod interface
+   ├── IP address
+   ├── Routes
+   └── Network connectivity
+```
+
+Examples of CNI implementations include:
+
+- Cilium
+- Calico
+- Flannel
+- cloud-provider networking plugins
+
+---
+
+### 22. CSI Communication
+
+Storage follows another communication path.
+
+```text
+Pod
+ │
+ ▼
+kubelet
+ │
+ ▼
+CSI driver
+ │
+ ▼
+Storage system
+```
+
+The **Container Storage Interface (CSI)** allows Kubernetes to communicate with storage systems.
+
+For example:
+
+```text
+Pod
+ ↓
+PVC
+ ↓
+PV
+ ↓
+CSI Driver
+ ↓
+Cloud / SAN / NAS / Storage Platform
+```
+
+---
+
+### 23. DNS Communication
+
+Applications commonly use Kubernetes DNS for Service discovery.
+
+```text
+Pod
+ │
+ │ DNS query
+ ▼
+CoreDNS
+ │
+ ▼
+Service / DNS records
+```
+
+For example:
+
+```text
+backend.default.svc.cluster.local
+```
+
+may resolve to the Service's cluster IP.
+
+DNS traffic is therefore primarily **Pod → DNS**, not Pod → API server.
+
+---
+
+### 24. Node → Node Communication
+
+Nodes also communicate directly with one another depending on the networking implementation.
+
+Typical traffic can include:
+
+```text
+Node A
+ │
+ ├── Pod → Pod
+ ├── Service traffic
+ ├── CNI traffic
+ └── Overlay / routing traffic
+ │
+ ▼
+Node B
+```
+
+The exact ports and protocols depend on the selected CNI and cluster architecture.
+
+Examples may include:
+
+- VXLAN
+- Geneve
+- IP-in-IP
+- BGP
+- Native cloud routing
+- eBPF-based forwarding
+
+Therefore, there is **no single universal Node-to-Node port list** for every Kubernetes cluster.
+
+---
+
+### 25. Node → External Network
+
+Pods and Nodes may need to communicate with external systems:
+
+```text
+Pod
+ │
+ ▼
+Node
+ │
+ ▼
+Network Gateway
+ │
+ ▼
+Internet / Corporate Network
+ │
+ ▼
+External Service
+```
+
+Examples:
+
+- Database servers
+- External APIs
+- SaaS platforms
+- Container registries
+- DNS infrastructure
+- Monitoring systems
+
+Network policies, firewalls, security groups, NAT, and routing determine whether such communication is allowed.
+
+---
+
+### 26. NetworkPolicy and Communication
+
+Kubernetes **NetworkPolicy** can control Pod traffic.
+
+Conceptually:
+
+```text
+Pod A ───────► Pod B
+       ALLOW
+
+Pod A ───────X Pod C
+       DENY
+```
+
+Policies can control:
+
+- Ingress traffic
+- Egress traffic
+- Source Pods
+- Destination Pods
+- Namespaces
+- IP ranges
+- Ports and protocols
+
+NetworkPolicy enforcement requires a networking implementation that supports NetworkPolicy.
+
+---
+
+### 27. SSH Tunnels
+
+Historically, Kubernetes supported SSH tunneling for control-plane-to-Node communication.
+
+Conceptually:
+
+```text
+kube-apiserver
+      │
+      │ SSH
+      ▼
+    Node
+      │
+      ▼
+   kubelet
+```
+
+SSH tunneling can provide a protected path when direct connectivity is unsuitable.
+
+Modern Kubernetes deployments generally rely on **TLS-secured communication and network-level security controls** rather than SSH tunnels.
+
+---
+
+### 28. Communication Security Model
+
+Kubernetes communication should be understood using four security layers:
+
+```text
+┌─────────────────────────────┐
+│ Authentication              │
+├─────────────────────────────┤
+│ Authorization               │
+├─────────────────────────────┤
+│ TLS / Encryption            │
+├─────────────────────────────┤
+│ Network Policy / Firewall   │
+└─────────────────────────────┘
+```
+
+### Authentication
+
+Determines:
+
+> Who are you?
+
+Examples:
+
+- Client certificates
+- ServiceAccount tokens
+- OIDC
+- Other configured authentication mechanisms
+
+### Authorization
+
+Determines:
+
+> What are you allowed to do?
+
+Examples:
+
+- RBAC
+- Node authorization
+
+### Encryption
+
+Determines:
+
+> Is the communication protected in transit?
+
+Typically:
+
+```text
+HTTPS / TLS
+```
+
+### Network Security
+
+Determines:
+
+> Can the traffic reach the destination at all?
+
+Examples:
+
+- Firewall
+- Security groups
+- NetworkPolicy
+- Network ACLs
+- Routing rules
+
+---
+
+### 29. Complete Kubernetes Communication Model
+
+The following model brings the major communication paths together:
+
+```text
+					┌─────────────────────┐
+					│       kubectl       │
+					└──────────┬──────────┘
+									│
+								HTTPS
+									│
+									▼
+					┌─────────────────────┐
+					│   kube-apiserver    │
+					└──────────┬──────────┘
+									│
+	┌──────────────────────┼──────────────────────┐
+	│                      │                      │
+	▼                      ▼                      ▼
+	etcd              kube-scheduler        controllers
+	│                      │                      │
+	│                      └──────────┬───────────┘
+	│                                 │
+	│                                 ▼
+	│                         kube-apiserver
+	│
+	└─────────────────────────────────────────────
+
+									│
+								HTTPS
+									│
+	┌──────────────────────┼──────────────────────┐
+	│                      │                      │
+	▼                      ▼                      ▼
+	Node 1                  Node 2                 Node 3
+	│                      │                      │
+	kubelet                kubelet                kubelet
+	│                      │                      │
+	Container Runtime      Container Runtime      Container Runtime
+	│                      │                      │
+	┌───┴───┐              ┌───┴───┐              ┌───┴───┐
+	│       │              │       │              │       │
+	Pod     Pod            Pod     Pod            Pod     Pod
+	│       │              │       │              │       │
+	└───┬───┘              └───┬───┘              └───┬───┘
+	│                      │                      │
+	└────────────── CNI / Pod Network ────────────┘
+```
+
+---
+
+### 30. Communication Matrix
+
+A useful reference table is:
+
+| Source      | Destination       | Purpose                          | Typical Security           |
+| ----------- | ----------------- | -------------------------------- | -------------------------- |
+| `kubectl`   | API server        | Kubernetes API operations        | HTTPS/TLS                  |
+| kubelet     | API server        | Node/Pod management and status   | HTTPS/TLS                  |
+| API server  | kubelet           | Logs, exec, attach, port-forward | HTTPS/TLS                  |
+| API server  | etcd              | Cluster state storage            | HTTPS/TLS                  |
+| Scheduler   | API server        | Watch and bind Pods              | HTTPS/TLS                  |
+| Controllers | API server        | Watch/update resources           | HTTPS/TLS                  |
+| Pod         | API server        | Kubernetes API access            | HTTPS/TLS + ServiceAccount |
+| Pod         | Pod               | Application traffic              | CNI/network                |
+| Pod         | Service           | Application/service traffic      | CNI + Service routing      |
+| Pod         | CoreDNS           | DNS resolution                   | Cluster networking         |
+| kubelet     | Container Runtime | Container lifecycle              | CRI                        |
+| kubelet     | CNI               | Pod networking                   | CNI                        |
+| kubelet     | CSI               | Storage operations               | CSI                        |
+| Node        | Node              | Pod/network traffic              | CNI/network                |
+| Pod         | External system   | External application traffic     | Network/TLS dependent      |
+
+---
+
+### 31. Important Port Concepts
+
+Do not memorize one universal port table for Kubernetes networking.
+
+Some common ports include:
+
+| Port    | Typical Component | Purpose              |
+| ------- | ----------------- | -------------------- |
+| `6443`  | kube-apiserver    | Kubernetes API       |
+| `2379`  | etcd              | Client communication |
+| `2380`  | etcd              | Peer communication   |
+| `10250` | kubelet           | Kubelet API          |
+| `53`    | DNS               | DNS queries          |
+| `22`    | SSH               | SSH, if used         |
+
+The actual ports can vary depending on:
+
+- Kubernetes distribution
+- Cloud provider
+- CNI
+- Container runtime
+- Service configuration
+- Cluster architecture
+
+Always verify the configuration of the actual cluster rather than relying solely on a generic port list.
+
+---
+
+### 32. End-to-End Example: Deploying an Application
+
+Suppose you execute:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+The communication flow is approximately:
+
+```text
+Developer
+    │
+    ▼
+ kubectl
+    │
+    │ HTTPS
+    ▼
+kube-apiserver
+    │
+    ▼
+Authentication
+    │
+    ▼
+Authorization
+    │
+    ▼
+Admission
+    │
+    ▼
+Cluster State
+    │
+    ▼
+Controllers
+    │
+    ▼
+ReplicaSet
+    │
+    ▼
+Pod
+    │
+    ▼
+Scheduler
+    │
+    ▼
+Node Assignment
+    │
+    ▼
+kubelet
+    │
+    ▼
+Container Runtime
+    │
+    ▼
+Container
+```
+
+---
+
+### 33. End-to-End Example: Application Request
+
+Suppose a frontend Pod calls a backend Service:
+
+```text
+Frontend Pod
+     │
+     │ DNS lookup
+     ▼
+   CoreDNS
+     │
+     │ backend Service IP
+     ▼
+Backend Service
+     │
+     │ Service routing
+     ▼
+Backend Pod
+     │
+     ▼
+Application
+```
+
+Notice that the **kube-apiserver is not in the normal data path**.
+
+This distinction is fundamental:
+
+> **The Kubernetes API server manages the cluster; it does not normally carry application traffic between Pods.**
+
+---
+
+### 34. Control Plane vs Data Plane
+
+This distinction should be emphasized in your README.
+
+### Control Plane Traffic
+
+Responsible for managing Kubernetes:
+
+```text
+kubectl
+   ↓
+API Server
+   ↓
+Controllers / Scheduler / etcd
+   ↓
+kubelet
+```
+
+Examples:
+
+- Pod scheduling
+- Node management
+- Resource updates
+- Cluster state
+- Pod logs
+- `exec`
+- `port-forward`
+
+### Data Plane Traffic
+
+Responsible for running applications:
+
+```text
+Pod
+ ↓
+Service
+ ↓
+Pod
+```
+
+and:
+
+```text
+Pod
+ ↓
+External Network
+```
+
+The data plane is primarily handled by:
+
+- CNI
+- kube-proxy or equivalent
+- Node networking
+- Load balancers
+- NetworkPolicy implementation
+
+---
+
+### 35. The Most Important Concept
+
+A useful mental model is:
+
+```text
+                 CONTROL PLANE
+                      │
+                      │ Kubernetes API
+                      ▼
+                 kube-apiserver
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+          ▼                       ▼
+       kubelet              Cluster State
+          │                    / etcd
+          ▼
+   Container Runtime
+          │
+          ▼
+       Containers
+          │
+          ▼
+       APPLICATION
+          │
+          ▼
+   ┌──────┴───────┐
+   │              │
+   ▼              ▼
+ Services       External
+   │             Systems
+   ▼
+ Pods
+```
+
+The key principle is:
+
+> **The API server is primarily the control-plane communication hub, while the CNI/networking layer carries normal application data-plane traffic.**
+
+Understanding this distinction makes Kubernetes networking, troubleshooting, security, and architecture significantly easier.
+
+### [Self-Healing capabilities](https://kubernetes.io/docs/concepts/architecture/self-healing/)
+
+| Self-Healing Capability         | Function                                                                                                                                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Container-level restart**     | If a container fails, the **kubelet** can restart it according to the Pod's `restartPolicy`.                                                                                             |
+| **Pod replacement**             | If a Pod managed by a **Deployment, StatefulSet, or DaemonSet** fails, the controller creates a replacement Pod to maintain the desired state.                                           |
+| **Persistent storage recovery** | If a Node fails while running a Pod with persistent storage, Kubernetes can coordinate volume detachment and reattachment to a replacement Pod, depending on the storage implementation. |
+| **Service traffic management**  | When a Pod is no longer ready, Kubernetes removes it from the Service's eligible endpoints so normal Service traffic is directed to healthy Pods.                                        |
+
+#### Couple of key components for Self-Healing
 
 - **kubelet** Ensures that containers are running, and restarts those that fail.
 - **ReplicaSet, StatefulSet and DaemonSet controller** Maintains the desired number of Pod replicas.
